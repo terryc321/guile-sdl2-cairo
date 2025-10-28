@@ -1,0 +1,5 @@
+run.sh
+*.dvi
+*.log
+*.pdf
+Makefile

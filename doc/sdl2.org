@@ -1,0 +1,2952 @@
+
+* Guile SDL2 FFI
+
+* Development
+
+want to develop code in code editor .
+
+do not want to be doing literate programming developing the code in the documentation manager system of your choice.
+
++ code editor for specific language be better equipped than any document text editor
+
++ code editor integrates language server and debugger specialized to the task
+
+  
+
+* Design
+
+once can do some graphical output reliably , the next question is well what should we do ?
+
++ smalltalk car demo
+
+  objects or things
+  click lego pieces type programming
+  
+  paint a car with white headlights on screen and then call it a car
+  then draw a steering wheel and have the car be steered when turn steering wheel
+  then give car some antennae
+  draw a track
+  then have car run and try to keep to the track as it goes round
+  
+
++ pipeline programming
+
+  effectively rail track programming with functions or things
+  functions can take functions or things and make functions or other things 
+  youtube videos guy talks about power of composition
+  
+ 
++  character animation and games
+
+  simple side scroller game with character jumps on turtles and snakes like mario
+  using sdl2 libraries
+  
++ 
+  
+
+* Code Editor
+
+a text editor edits text
+
+scheme code requires a few more changes
+
+lets focus on how it could be done to make an editor 
+
+a text editor splits into a number of sub problems
+
+** reliability or crash recovery
+
+recover from a crash unexpectedly
+
+** infinite undo redo
+
+figure out the opposite operations
+
++ insert character vs delete a character
+
++ insert a long string vs delete a long string
+
++ move cursor up vs move cursor down
+
++ move cursor left vs cursor right
+
++ save a file vs ? do we stash old files away somewhere and resurrect them from grave ?
+
+
+** novisual editor
+
+like a text editor but does no display as such . can feed commands to editor (insert-character #\a) , (cursor-down) ,
+(delete-character) , (forward-word) , various commands until at end can ask what is the result ,
+
+how many lines does it have ?
+
+what is at character offset 32 ?
+
+does line numbering start from 0 ?
+
+does column numbering start from 0 ?
+
+
+** the buffer
+
+initially all buffers are empty . 
+
+how represent buffer in computer - we can go with gap buffer algorithm , how big a gap ?
+
+** buffers on screen
+
+one window , multiple window , multiple buffers
+
+arranged horizontally vertically
+
+how should buffers behave , should some appear and disappear 
+
+** dired directory editor
+
+show some directories , files and ways to navigate up down directories 
+
+** the display
+
+lets assume have some buffer with some text in it , how  best to display that information to user .
+
+presumably there will be one or more cursor(s) on screen .
+
+is it a collaborative editor .
+
+** number line mode
+
+toggle number lines on and off be useful when working in pair programming can tell exactly on what line need to change
+
+** sizeable font
+
+ability to make font larger or smaller useful for presentations
+
+** resize editor
+
+resizing screen so fits on presentation window useful
+
+full screen destop , minimized
+
+
+
+** search replace
+
+** tooltips
+
+** programming completions
+
+documentation appears with coding on seperate pane
+
+** file tree
+
+see file directory of current project on screen
+along with buffers 
+
+** projectile
+
+project management - jump to project 
+
+** telescope fuzzy finder
+
+searches files for common word
+
+** colourise using a language server
+
+what is a language server , how does emacs do anything useful
+
+** why is eclipse editor so lambasted
+
+its big ok , but does it work ? how does it work ?
+
+does object programming give it the elusive extensibility property ?
+
+have you wrote an eclipse plugin ?
+
+have you wrote an intellij plugin ?
+
+** Guile
+
+https://www.youtube.com/channel/UCuj_loxODrOPxSsXDfJmpng tropin 
+
+https://git.sr.ht/~abcdw/guile-ares-rs  
+
+guile-ares-rs
+
+guile-arei
+
+*** guile-nrepl command setup
+
+this will start guile-ares server. then open a scheme file in emacs and try C-c C-a should start sesman.
+otherwise C-u C-c C-a enter localhost then enter port number shown by nrepl script below
+#+begin_src
+~/bin/guile-nrepl
+
+#!/bin/bash  
+guile -L /home/terry/src/guile-ares-rs/guile-ares-rs/src/guile -c "(begin (use-modules (guix gexp)) #;(load gexp reader extension globally) \
+'((@ (ares server) run-nrepl-server)))"
+#+end_src
+
+have setup that does not use guix
+#+begin_src
+guile -c \
+"(begin (use-modules (guix gexp)) #;(load gexp reader extension globally) \
+((@ (ares server) run-nrepl-server)))" 
+#+end_src
+
+** Emacs org mode notes
+
+C-e h o  : output html - then ctrl-alt browser
+
+C-c C-v t  : tangle buffer - ie output code to files 
+
+guile-nrepl : start guile ares-rs 
+
+guile lacks a multiline construct for strings - sfri-109 not implemented
+
+design of the foreign function interface for guile to follow the C code as closely as possible.
+while values can be defined , no way in vanilla scheme to prevent their redefinition unless we
+redefine set! which be interesting.
+
+decided against using percent % sign to represent foreign function because if using the ffi i think
+already in deep that scheme procedures may be more complicated than plain vanilla scheme code.
+
+do two org mode files corrupt tangled files 
+
+** makefile
+
+#+begin_src 
+install:
+	cp -rv graphics /opt/guile/share/guile/site/3.0/ 
+#+end_src
+
+
+* SDL2
+
+** sdl-init-constants
+
+#+begin_src 
+
+;; autogenerated file from documentation sdl.org file via emacs
+
+(define-module (graphics sdl2)
+  #:export (*sdl-init-timer*
+	    *sdl-init-audio*
+	    *sdl-init-video*
+	    *sdl-init-joystick*
+	    *sdl-init-haptic*
+	    *sdl-init-gamecontroller*
+	    *sdl-init-events*
+	    *sdl-init-sensor*
+	    *sdl-init-parachute*
+	    *sdl-init-everything*
+	    sdl-init
+	    sdl-quit
+  sdl-create-window
+create-window
+sdl-get-window-surface
+sdl-free-surface
+sdl-load-bmp-rw
+sdl-rw-from-file
+sdl-load-bmp
+sdl-show-cursor
+load-texture
+img-quit
+sdl-destroy-window
+sdl-create-texture-from-surface
+sdl-destroy-texture
+sdl-destroy-renderer
+sdl-create-rgb-surface
+create-rgb-surface
+sdl-map-rgb
+sdl-fill-rect
+sdl-update-window-surface
+sdl-convert-surface
+sdl-blit-surface
+sdl-render-clear
+sdl-render-copy
+sdl-render-present
+sdl-render-draw-line
+sdl-render-draw-rect
+sdl-render-fill-rect
+sdl-render-draw-point
+
+sdl-poll-event
+
+*sdl-quit*
+*sdl-keydown*
+*sdl-keyup*
+*sdl-mousemotion*
+*sdl-window-event*
+*sdl-scancode-unknown* 
+*sdl-scancode-a* 
+*sdl-scancode-b* 
+*sdl-scancode-c* 
+*sdl-scancode-d* 
+*sdl-scancode-e* 
+*sdl-scancode-f* 
+*sdl-scancode-g* 
+*sdl-scancode-h* 
+*sdl-scancode-i* 
+*sdl-scancode-j* 
+*sdl-scancode-k* 
+*sdl-scancode-l* 
+*sdl-scancode-m* 
+*sdl-scancode-n* 
+*sdl-scancode-o* 
+*sdl-scancode-p* 
+*sdl-scancode-q* 
+*sdl-scancode-r* 
+*sdl-scancode-s* 
+*sdl-scancode-t* 
+*sdl-scancode-u* 
+*sdl-scancode-v* 
+*sdl-scancode-w* 
+*sdl-scancode-x* 
+*sdl-scancode-y* 
+*sdl-scancode-z* 
+*sdl-scancode-1* 
+*sdl-scancode-2* 
+*sdl-scancode-3* 
+*sdl-scancode-4* 
+*sdl-scancode-5* 
+*sdl-scancode-6* 
+*sdl-scancode-7* 
+*sdl-scancode-8* 
+*sdl-scancode-9* 
+*sdl-scancode-0* 
+*sdl-scancode-return* 
+*sdl-scancode-escape* 
+*sdl-scancode-backspace* 
+*sdl-scancode-tab* 
+*sdl-scancode-space* 
+*sdl-scancode-minus* 
+*sdl-scancode-equals* 
+*sdl-scancode-leftbracket* 
+*sdl-scancode-rightbracket* 
+*sdl-scancode-backslash* 
+*sdl-scancode-nonushash* 
+*sdl-scancode-semicolon* 
+*sdl-scancode-apostrophe* 
+*sdl-scancode-grave* 
+*sdl-scancode-comma* 
+*sdl-scancode-period* 
+*sdl-scancode-slash* 
+*sdl-scancode-capslock* 
+*sdl-scancode-f1* 
+*sdl-scancode-f2* 
+*sdl-scancode-f3* 
+*sdl-scancode-f4* 
+*sdl-scancode-f5* 
+*sdl-scancode-f6* 
+*sdl-scancode-f7* 
+*sdl-scancode-f8* 
+*sdl-scancode-f9* 
+*sdl-scancode-f10* 
+*sdl-scancode-f11* 
+*sdl-scancode-f12* 
+*sdl-scancode-printscreen* 
+*sdl-scancode-scrolllock* 
+*sdl-scancode-pause* 
+*sdl-scancode-insert* 
+*sdl-scancode-home* 
+*sdl-scancode-pageup* 
+*sdl-scancode-delete* 
+*sdl-scancode-end* 
+*sdl-scancode-pagedown* 
+*sdl-scancode-right* 
+*sdl-scancode-left* 
+*sdl-scancode-down* 
+*sdl-scancode-up* 
+*sdl-scancode-numlockclear* 
+*sdl-scancode-kp-divide* 
+*sdl-scancode-kp-multiply* 
+*sdl-scancode-kp-minus* 
+*sdl-scancode-kp-plus* 
+*sdl-scancode-kp-enter* 
+*sdl-scancode-kp-1* 
+*sdl-scancode-kp-2* 
+*sdl-scancode-kp-3* 
+*sdl-scancode-kp-4* 
+*sdl-scancode-kp-5* 
+*sdl-scancode-kp-6* 
+*sdl-scancode-kp-7* 
+*sdl-scancode-kp-8* 
+*sdl-scancode-kp-9* 
+*sdl-scancode-kp-0* 
+*sdl-scancode-kp-period* 
+*sdl-scancode-nonusbackslash* 
+*sdl-scancode-application* 
+*sdl-scancode-power* 
+*sdl-scancode-kp-equals* 
+*sdl-scancode-f13* 
+*sdl-scancode-f14* 
+*sdl-scancode-f15* 
+*sdl-scancode-f16* 
+*sdl-scancode-f17* 
+*sdl-scancode-f18* 
+*sdl-scancode-f19* 
+*sdl-scancode-f20* 
+*sdl-scancode-f21* 
+*sdl-scancode-f22* 
+*sdl-scancode-f23* 
+*sdl-scancode-f24* 
+*sdl-scancode-execute* 
+*sdl-scancode-help* 
+*sdl-scancode-menu* 
+*sdl-scancode-select* 
+*sdl-scancode-stop* 
+*sdl-scancode-again* 
+*sdl-scancode-undo* 
+*sdl-scancode-cut* 
+*sdl-scancode-copy* 
+*sdl-scancode-paste* 
+*sdl-scancode-find* 
+*sdl-scancode-mute* 
+*sdl-scancode-volumeup* 
+*sdl-scancode-volumedown* 
+*sdl-scancode-lockingcapslock* 
+*sdl-scancode-lockingnumlock* 
+*sdl-scancode-lockingscrolllock* 
+*sdl-scancode-kp-comma* 
+*sdl-scancode-kp-equalsas400* 
+*sdl-scancode-international1* 
+*sdl-scancode-international2* 
+*sdl-scancode-international3* 
+*sdl-scancode-international4* 
+*sdl-scancode-international5* 
+*sdl-scancode-international6* 
+*sdl-scancode-international7* 
+*sdl-scancode-international8* 
+*sdl-scancode-international9* 
+*sdl-scancode-lang1* 
+*sdl-scancode-lang2* 
+*sdl-scancode-lang3* 
+*sdl-scancode-lang4* 
+*sdl-scancode-lang5* 
+*sdl-scancode-lang6* 
+*sdl-scancode-lang7* 
+*sdl-scancode-lang8* 
+*sdl-scancode-lang9* 
+*sdl-scancode-alterase* 
+*sdl-scancode-sysreq* 
+*sdl-scancode-cancel* 
+*sdl-scancode-clear* 
+*sdl-scancode-prior* 
+*sdl-scancode-return2* 
+*sdl-scancode-separator* 
+*sdl-scancode-out* 
+*sdl-scancode-oper* 
+*sdl-scancode-clearagain* 
+*sdl-scancode-crsel* 
+*sdl-scancode-exsel* 
+*sdl-scancode-kp-00* 
+*sdl-scancode-kp-000* 
+*sdl-scancode-thousandsseparator* 
+*sdl-scancode-decimalseparator* 
+*sdl-scancode-currencyunit* 
+*sdl-scancode-currencysubunit* 
+*sdl-scancode-kp-leftparen* 
+*sdl-scancode-kp-rightparen* 
+*sdl-scancode-kp-leftbrace* 
+*sdl-scancode-kp-rightbrace* 
+*sdl-scancode-kp-tab* 
+*sdl-scancode-kp-backspace* 
+*sdl-scancode-kp-a* 
+*sdl-scancode-kp-b* 
+*sdl-scancode-kp-c* 
+*sdl-scancode-kp-d* 
+*sdl-scancode-kp-e* 
+*sdl-scancode-kp-f* 
+*sdl-scancode-kp-xor* 
+*sdl-scancode-kp-power* 
+*sdl-scancode-kp-percent* 
+*sdl-scancode-kp-less* 
+*sdl-scancode-kp-greater* 
+*sdl-scancode-kp-ampersand* 
+*sdl-scancode-kp-dblampersand* 
+*sdl-scancode-kp-verticalbar* 
+*sdl-scancode-kp-dblverticalbar* 
+*sdl-scancode-kp-colon* 
+*sdl-scancode-kp-hash* 
+*sdl-scancode-kp-space* 
+*sdl-scancode-kp-at* 
+*sdl-scancode-kp-exclam* 
+*sdl-scancode-kp-memstore* 
+*sdl-scancode-kp-memrecall* 
+*sdl-scancode-kp-memclear* 
+*sdl-scancode-kp-memadd* 
+*sdl-scancode-kp-memsubtract* 
+*sdl-scancode-kp-memmultiply* 
+*sdl-scancode-kp-memdivide* 
+*sdl-scancode-kp-plusminus* 
+*sdl-scancode-kp-clear* 
+*sdl-scancode-kp-clearentry* 
+*sdl-scancode-kp-binary* 
+*sdl-scancode-kp-octal* 
+*sdl-scancode-kp-decimal* 
+*sdl-scancode-kp-hexadecimal* 
+*sdl-scancode-lctrl* 
+*sdl-scancode-lshift* 
+*sdl-scancode-lalt* 
+*sdl-scancode-lgui* 
+*sdl-scancode-rctrl* 
+*sdl-scancode-rshift* 
+*sdl-scancode-ralt* 
+*sdl-scancode-rgui* 
+*sdl-scancode-mode* 
+*sdl-scancode-audionext* 
+*sdl-scancode-audioprev* 
+*sdl-scancode-audiostop* 
+*sdl-scancode-audioplay* 
+*sdl-scancode-audiomute* 
+*sdl-scancode-mediaselect* 
+*sdl-scancode-www* 
+*sdl-scancode-mail* 
+*sdl-scancode-calculator* 
+*sdl-scancode-computer* 
+*sdl-scancode-ac-search* 
+*sdl-scancode-ac-home* 
+*sdl-scancode-ac-back* 
+*sdl-scancode-ac-forward* 
+*sdl-scancode-ac-stop* 
+*sdl-scancode-ac-refresh* 
+*sdl-scancode-ac-bookmarks* 
+*sdl-scancode-brightnessdown* 
+*sdl-scancode-brightnessup* 
+*sdl-scancode-displayswitch* 
+*sdl-scancode-kbdillumtoggle* 
+*sdl-scancode-kbdillumdown* 
+*sdl-scancode-kbdillumup* 
+*sdl-scancode-eject* 
+*sdl-scancode-sleep* 
+*sdl-scancode-app1* 
+*sdl-scancode-app2* 
+*sdl-scancode-audiorewind* 
+*sdl-scancode-audiofastforward* 
+*sdl-scancode-softleft* 
+*sdl-scancode-softright* 
+*sdl-scancode-call* 
+*sdl-scancode-endcall* 
+*sdl-num-scancodes* 
+
+*sdl-window-event-none* 
+*sdl-window-event-shown* 
+*sdl-window-event-hidden* 
+*sdl-window-event-exposed* 
+*sdl-window-event-moved* 
+*sdl-window-event-resized* 
+*sdl-window-event-changed* 
+*sdl-window-event-minimized* 
+*sdl-window-event-maximized* 
+*sdl-window-event-restored* 
+*sdl-window-event-enter* 
+*sdl-window-event-leave* 
+*sdl-window-event-focus-gained* 
+*sdl-window-event-focus-lost* 
+*sdl-window-event-close* 
+*sdl-window-event-take-focus* 
+*sdl-window-event-hit-test* 
+*sdl-window-event-icc-prof-changed* 
+*sdl-window-event-display-changed* 
+
+  
+;; libpixelformat.so 
+pixelformat
+pixelformat2  
+output-check
+applyStretchedImage
+size-int
+sdl-upper-blit-scaled
+  
+*sdl-image-init-jpg*
+*sdl-image-init-png*  
+*sdl-image-init-tif*  
+*sdl-image-init-webp* 
+*sdl-image-init-jxl*  
+*sdl-image-init-avif* 
+
+%img-init
+%img-load
+image-load  
+image-init
+%sdl-create-renderer
+%sdl-surface-pixels  
+%sdl-surface-width
+%sdl-surface-height
+sdl-set-render-draw-color
+show-rect
+
+*sdl-renderer-software* 
+*sdl-renderer-accelerated* 
+*sdl-renderer-present-vsync* 
+*sdl-renderer-target-texture* 
+  
+create-renderer
+  
+ttf-init
+ttf-quit
+ttf-render-text-solid
+ttf-render-utf8-blended-wrapped
+ttf-open-font
+ttf-close-font
+
+  ;; some cairo stuff - not sure it works yet
+*cairo-format-rgb24* ;; ??
+  
+cairo-image-surface-create-for-data
+cairo-rectangle
+cairo-set-source-rgb  
+cairo-create
+cairo-fill
+cairo-surface-flush
+  
+))
+
+(use-modules (system foreign-library)) ;; probably only need system foreign
+(use-modules (system foreign))
+
+;; guile #x means HEX value follows #xFF is 255 decimal
+  
+(define *sdl-init-timer*             #x00000001)
+(define *sdl-init-audio*             #x00000010)
+(define *sdl-init-video*             #x00000020)
+(define *sdl-init-joystick*          #x00000200)
+(define *sdl-init-haptic*            #x00001000)
+(define *sdl-init-gamecontroller*    #x00002000)
+(define *sdl-init-events*            #x00004000)
+(define *sdl-init-sensor*            #x00008000)
+(define *sdl-init-parachute*         #x00100000)
+
+;; guile logior is logical inclusive or
+  
+(define *init-everything*  (logior *sdl-init-timer*
+				   *sdl-init-audio*
+				   *sdl-init-video*
+				   *sdl-init-events*
+				   *sdl-init-joystick*
+				   *sdl-init-haptic*
+				   *sdl-init-gamecontroller*
+				   *sdl-init-sensor*))
+ 
+#+end_src
+
+** sdl-init
+
+#+begin_src 
+(define sdl-init
+(foreign-library-function "libSDL2" "SDL_Init"
+                            #:return-type int
+                            #:arg-types (list uint32)))
+ 
+#+end_src
+
+** sdl-quit
+#+begin_src 
+(define sdl-quit
+  (foreign-library-function "libSDL2" "SDL_Quit"
+                            #:return-type void
+                            #:arg-types (list)))
+ 
+#+end_src
+
+** sdl-window-flags
+
+#+begin_src 
+
+(define *sdl-window-fullscreen* #x00000001)
+(define *sdl-window-opengl* #x00000002)
+(define *sdl-window-shown* #x00000004)
+(define *sdl-window-hidden* #x00000008)
+(define *sdl-window-borderless* #x00000010)
+(define *sdl-window-resizeable* #x00000020)
+(define *sdl-window-minimized* #x00000040)
+(define *sdl-window-maximized* #x00000080)
+(define *sdl-window-mouse-grabbed* #x000000100)
+(define *sdl-window-input-focus* #x000000200)
+(define *sdl-window-mouse-focus* #x000000400)
+(define *sdl-window-fullscreen-desktop* (logior *sdl-window-fullscreen* #x0001000))
+(define *sdl-window-foreign* #x000000800)
+(define *sdl-window-allow-highdpi* #x0000002000)
+(define *sdl-window-mouse-capture* #x0000004000)
+(define *sdl-window-always-on-top* #x0000008000)
+(define *sdl-window-skip-taskbar* #x00000010000)
+(define *sdl-window-utility* #x00000020000)
+(define *sdl-window-tooltip* #x00000040000)
+(define *sdl-window-popup-menu* #x00000080000)
+(define *sdl-window-keyboard-grabbed* #x00100000)
+(define *sdl-window-vulkan* #x10000000)
+(define *sdl-window-metal*  #x20000000)
+(define *sdl-window-input-grabbed*  *sdl-window-mouse-grabbed*)
+
+#+end_src
+
+** sdl-create-window
+
+#+begin_src 
+;; how represent a char* in guile ffi ??
+;; #:return-type '*  means a pointer   :: a quoted star symbol '*  , not scheme * multiply symbol
+;; #:arg-types (list 
+(define sdl-create-window 
+  (foreign-library-function "libSDL2" "SDL_CreateWindow"
+                            #:return-type '*
+                            #:arg-types (list '* int int int int int)))
+
+
+;; guile string -> char* use : string->pointer :
+;; example
+;; (string->pointer "my window")
+;; will return an appropriate ? null terminated ? char* ?? for the guile string "my window"
+
+;; convenience middle of my screen 1920 x 1080 default resolution
+(define (create-window title width height)
+  (let ((x (floor (/ (- 1920 width) 2)))
+	(y (floor (/ (- 1080 height) 2)))
+	(flags (logior ;;*sdl-window-fullscreen-desktop*
+		        *sdl-window-resizeable*
+		        *sdl-window-allow-highdpi*
+			*sdl-window-always-on-top*
+			;;*sdl-window-fullscreen*
+		       ;;*sdl-window-borderless*
+		       *sdl-window-shown*)))
+    (sdl-create-window (string->pointer title) x y width height flags)))
+
+
+
+;; gScreenSurface = SDL_GetWindowSurface( gWindow );
+(define sdl-get-window-surface 
+  (foreign-library-function "libSDL2" "SDL_GetWindowSurface"
+                            #:return-type '*
+                            #:arg-types (list '* )))
+
+;; void SDL_FreeSurface(SDL_Surface * surface)
+(define sdl-free-surface
+  (foreign-library-function "libSDL2" "SDL_FreeSurface"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+;;SDL_Surface* SDL_LoadBMP_RW(SDL_RWops * src, int freesrc);
+(define sdl-load-bmp-rw
+  (foreign-library-function "libSDL2" "SDL_LoadBMP_RW"
+                            #:return-type '*
+                            #:arg-types (list '* int)))
+
+
+;; SDL_RWops* SDL_RWFromFile(const char *file, const char *mode);
+(define sdl-rw-from-file
+  ;; " guile ffi need string->pointer "
+  (foreign-library-function "libSDL2" "SDL_RWFromFile"
+                            #:return-type '*
+                            #:arg-types (list '* '*)))
+
+
+;; #define SDL_LoadBMP(file)   SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
+(define (sdl-load-bmp filename)
+  "SDL_LoadBMP is a macro in C land
+ becomes two required routines
+ SDL_RWFromFile(file, \"rb\")
+ SDL_LoadBMP_RW
+ "
+  (sdl-load-bmp-rw (sdl-rw-from-file (string->pointer filename) (string->pointer "rb")) 1))
+
+
+;; int SDL_ShowCursor(int toggle);
+(define sdl-show-cursor
+  (foreign-library-function "libSDL2" "SDL_ShowCursor"
+                            #:return-type int
+                            #:arg-types (list int)))
+
+
+
+
+#|
+SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
+{
+    //The final texture
+    SDL_Texture* newTexture = NULL;
+
+    //Load image at specified path
+    SDL_Surface* loadedSurface = IMG_Load( path );
+    if( loadedSurface == NULL )
+    {
+        printf( "Unable to load image %s! SDL_image Error: %s\n", path, IMG_GetError() );
+    }
+    else
+    {
+        //Create texture from surface pixels
+        newTexture = SDL_CreateTextureFromSurface( render, loadedSurface );
+        if( newTexture == NULL )
+        {
+            printf( "Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError() );
+        }
+
+        //Get rid of old loaded surface
+        SDL_FreeSurface( loadedSurface );
+    }
+
+    return newTexture;
+}
+|#
+
+(define (load-texture path render)
+  (define loaded-surface (%img-load (string->pointer path)))
+  (cond
+   ((equal? loaded-surface %null-pointer)
+    (format #t "unable to load image ~a ~%" path)
+    %null-pointer)
+   (#t (let ((new-texture (sdl-create-texture-from-surface render loaded-surface)))
+	 (cond
+	  ((equal? new-texture %null-pointer)
+	   (format #t "unable to create texture from image ~a ~%" path)
+	   %null-pointer)
+	  (#t (sdl-free-surface loaded-surface)
+	      new-texture))))))
+
+
+(define img-quit
+  (foreign-library-function "libSDL2_image" "IMG_Quit"
+                            #:return-type void
+                            #:arg-types (list )))
+
+
+
+  
+
+
+;; nm -D /usr/lib/x86_64-linux-gnu/libSDL2.so | grep SDL_LoadBMP
+;; 000000000004c620 T SDL_LoadBMP_RW
+;;
+;; C macros strikes again - no such thing in shared library 
+;; In procedure dlsym: Error resolving "SDL_LoadBMP": "/usr/lib/x86_64-linux-gnu/libSDL2.so: undefined symbol: SDL_LoadBMP"
+;;  #define SDL_LoadBMP(file)   SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
+;;
+
+
+;; usage
+;;SDL_DestroyWindow( gWindow );
+(define sdl-destroy-window
+  (foreign-library-function "libSDL2" "SDL_DestroyWindow"
+                            #:return-type void
+                            #:arg-types (list '* )))
+
+
+;;SDL_Texture * SDL_CreateTextureFromSurface(SDL_Renderer * renderer, SDL_Surface * surface);
+(define sdl-create-texture-from-surface
+  (foreign-library-function "libSDL2" "SDL_CreateTextureFromSurface"
+                            #:return-type '*
+                            #:arg-types (list '* '*)))
+
+
+;;void SDL_DestroyTexture(SDL_Texture * texture);
+(define sdl-destroy-texture
+  (foreign-library-function "libSDL2" "SDL_DestroyTexture"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+;;SDL_DestroyRenderer
+;;void SDL_DestroyRenderer(SDL_Renderer * renderer);
+(define sdl-destroy-renderer
+  (foreign-library-function "libSDL2" "SDL_DestroyRenderer"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+
+
+;; usage
+;; int flags = 0; // flags unused should be set to 0 ??
+;; 	  int width = SCREEN_WIDTH; // 640 pixels wide
+;; 	  int height = SCREEN_HEIGHT; // 480 pixels high
+;; 	  int depth = 32; // 32 bits - cairo only understands 32 bits
+;; 	  SDL_Surface *sdlsurf = SDL_CreateRGBSurface (
+;; 						       flags, width, height, depth,
+;; 						       0x00FF0000, /* Rmask */
+;; 						       0x0000FF00, /* Gmask */
+;; 						       0x000000FF, /* Bmask */
+;; 						       0); /* Amask */
+(define sdl-create-rgb-surface  
+  (foreign-library-function "libSDL2" "SDL_CreateRGBSurface"
+                            #:return-type '*
+                            #:arg-types (list int int int int int int int int )))
+
+;; convenience function
+(define (create-rgb-surface width height)
+  (let ((flags 0) ;;unused
+	(depth 32) ;; only depth SDL and CAIRO agree on
+	(rmask #x00FF0000) ;; red mask
+	(gmask #x0000FF00) ;; green mask
+	(bmask #x000000FF) ;; blue mask
+	(amask #x0)) ;; alpha mask - unused	
+    (sdl-create-rgb-surface flags width height depth rmask gmask bmask amask)))
+
+
+
+;; guile (use-modules (system foreign)) exposes typical C types uint8 uint32 etc..
+;; assuming NULL is just 0
+;; Uint32 SDL_MapRGB(const SDL_PixelFormat * format,  Uint8 r, Uint8 g, Uint8 b);
+(define sdl-map-rgb
+  (foreign-library-function "libSDL2" "SDL_MapRGB"
+                            #:return-type uint32
+                            #:arg-types (list '* uint8 uint8 uint8)))
+
+
+;; int SDL_FillRect (SDL_Surface * dst, const SDL_Rect * rect, Uint32 color);
+;; returns 0 on success
+(define sdl-fill-rect
+  (foreign-library-function "libSDL2" "SDL_FillRect"
+			    #:return-type int
+                            #:arg-types (list '* '* uint32)))
+
+
+;; int SDL_UpdateWindowSurface(SDL_Window * window);
+(define sdl-update-window-surface
+  (foreign-library-function "libSDL2" "SDL_UpdateWindowSurface"
+			    #:return-type int
+                            #:arg-types (list '*)))
+
+
+#|
+https://lazyfoo.net/tutorials/SDL/05_optimized_surface_loading_and_soft_stretching/index.php
+
+SDL_Surface* SDL_ConvertSurface
+(SDL_Surface * src, const SDL_PixelFormat * fmt, Uint32 flags;)
+|#
+(define sdl-convert-surface
+  (foreign-library-function "libSDL2" "SDL_ConvertSurface"
+			    #:return-type '*
+                            #:arg-types (list '* '* uint32)))
+
+
+
+
+
+
+;; ======================== cairo stuff ========================================
+
+#|
+cairo_surface_t *cairosurf = cairo_image_surface_create_for_data (
+									    (unsigned char*)sdlsurf->pixels,
+									    CAIRO_FORMAT_RGB24,
+									    sdlsurf->w,
+									    sdlsurf->h,
+									    sdlsurf->pitch);
+	  
+
+#define SDL_BlitSurface SDL_UpperBlit
+int SDL_UpperBlit
+    (SDL_Surface * src, const SDL_Rect * srcrect,
+     SDL_Surface * dst, SDL_Rect * dstrect);
+
+|#
+(define sdl-blit-surface 
+  (foreign-library-function "libSDL2" "SDL_UpperBlit"
+			    #:return-type int
+                            #:arg-types (list '* '* '* '*)))
+
+
+;; render-clear
+;; int SDL_RenderClear(SDL_Renderer * renderer);
+(define sdl-render-clear
+  (foreign-library-function "libSDL2" "SDL_RenderClear"
+			    #:return-type int
+                            #:arg-types (list '*)))
+
+;; int SDL_RenderCopy(SDL_Renderer * renderer,
+;;                    SDL_Texture * texture,
+;;                    const SDL_Rect * srcrect,
+;;                    const SDL_Rect * dstrect);
+(define sdl-render-copy
+  (foreign-library-function "libSDL2" "SDL_RenderCopy"
+			    #:return-type int
+                            #:arg-types (list '* '* '* '*)))
+
+;; void SDL_RenderPresent(SDL_Renderer * renderer);
+(define sdl-render-present
+  (foreign-library-function "libSDL2" "SDL_RenderPresent"
+			    #:return-type int
+                            #:arg-types (list '*)))
+
+
+;; int SDL_RenderDrawLine(SDL_Renderer * renderer,
+;;                        int x1, int y1, int x2, int y2);
+(define sdl-render-draw-line
+  (foreign-library-function "libSDL2" "SDL_RenderDrawLine"
+			    #:return-type int
+                            #:arg-types (list '* int int int int)))
+
+;; int SDL_RenderDrawRect(SDL_Renderer * renderer,   const SDL_Rect * rect);
+(define sdl-render-draw-rect
+  (foreign-library-function "libSDL2" "SDL_RenderDrawRect"
+			    #:return-type int
+                            #:arg-types (list '* '*)))
+
+;; int SDL_RenderFillRect(SDL_Renderer * renderer,
+;;                        const SDL_Rect * rect);
+(define sdl-render-fill-rect
+  (foreign-library-function "libSDL2" "SDL_RenderFillRect"
+			    #:return-type int
+                            #:arg-types (list '* '*)))
+
+
+;; int SDL_RenderDrawPoint(SDL_Renderer * renderer,
+;;                         int x, int y);
+(define sdl-render-draw-point
+  (foreign-library-function "libSDL2" "SDL_RenderDrawPoint"
+			    #:return-type int
+                            #:arg-types (list '* int int)))
+
+
+;; int TTF_Init(void);
+(define ttf-init
+  (foreign-library-function "libSDL2_ttf" "TTF_Init"
+			    #:return-type int
+                            #:arg-types (list)))
+
+;; void TTF_Quit(void);
+(define ttf-quit
+  (foreign-library-function "libSDL2_ttf" "TTF_Quit"
+			    #:return-type void
+                            #:arg-types (list)))
+
+;; SDL_Surface * TTF_RenderText_Solid(TTF_Font *font,   const char *text, SDL_Color fg);
+;; what do if structure was just as a parameter , not a pointer , how cope if structure bigger than 64bit ?
+;; does scheme do the integer conversion implicitly then ?
+(define ttf-render-text-solid
+  (foreign-library-function "libSDL2_ttf" "TTF_RenderText_Solid"
+			    #:return-type '*
+                            #:arg-types (list '* '* uint32)))
+
+
+
+;; typedef struct SDL_Color
+;; {
+;;     Uint8 r;
+;;     Uint8 g;
+;;     Uint8 b;
+;;     Uint8 a;
+;; } SDL_Color;
+;; SDL_Color is just an unsigned 32 bit uint32  (4 * 8 = 32)
+
+;;SDL_Surface * TTF_RenderUTF8_Blended_Wrapped(TTF_Font *font, const char *text, SDL_Color fg, Uint32 wrapLength);
+(define ttf-render-utf8-blended-wrapped
+  (foreign-library-function "libSDL2_ttf" "TTF_RenderUTF8_Blended_Wrapped"
+			    #:return-type '*
+                            #:arg-types (list '* '* uint32 uint32)))
+
+
+
+;; gFont = TTF_OpenFont( "16_true_type_fonts/lazy.ttf", 28 );
+;; TTF_Font * TTF_OpenFont(const char *file, int ptsize);
+(define ttf-open-font
+  (foreign-library-function "libSDL2_ttf" "TTF_OpenFont"
+			    #:return-type '*
+                            #:arg-types (list '* int)))
+
+;; void TTF_CloseFont(TTF_Font *font);
+(define ttf-close-font
+  (foreign-library-function "libSDL2_ttf" "TTF_CloseFont"
+			    #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+
+
+
+(define *cairo-format-rgb24* 1)
+
+(define cairo-image-surface-create-for-data
+  (foreign-library-function "libcairo" "cairo_image_surface_create_for_data"
+                            #:return-type '*
+                            #:arg-types (list '* int int int int)))
+
+
+(define cairo-rectangle
+  (foreign-library-function "libcairo" "cairo_rectangle"
+                            #:return-type void
+                            #:arg-types (list '* int int int int)))
+
+(define cairo-set-source-rgb
+  (foreign-library-function "libcairo" "cairo_set_source_rgb"
+                            #:return-type void
+                            #:arg-types (list '* double double double)))
+
+
+
+
+;;
+;; cairo_t *cairo_create( cairo_surface_t *)
+;; cairo_t is cairo context
+;; cairo_surface_t is a surface compatible with cairo 24 bit 
+(define cairo-create
+  (foreign-library-function "libcairo" "cairo_create"
+                            #:return-type '*
+                            #:arg-types (list '*)))
+
+
+(define cairo-fill
+  (foreign-library-function "libcairo" "cairo_fill"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+;;void cairo_surface_flush (cairo_surface_t *surface);
+(define cairo-surface-flush
+  (foreign-library-function "libcairo" "cairo_surface_flush"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+#+end_src
+
+** poll event
+
+#+begin_src 
+;; int SDL_PollEvent(SDL_Event * event);
+(define sdl-poll-event
+  (foreign-library-function "libSDL2" "SDL_PollEvent"
+			    #:return-type int
+                            #:arg-types (list '*)))
+ 
+#+end_src
+
+** event types
+
+#+begin_src 
+(define *sdl-quit* #x100)
+(define *sdl-keydown* #x300)
+(define *sdl-keyup* #x301)
+(define *sdl-mousemotion* #x400)
+(define *sdl-window-event* #x200) 
+#+end_src
+
+
+
+** keyboard scancodes
+
+#+begin_src 
+
+(define *sdl-scancode-unknown* 0) 
+(define *sdl-scancode-a* 4) 
+(define *sdl-scancode-b* 5) 
+(define *sdl-scancode-c* 6) 
+(define *sdl-scancode-d* 7) 
+(define *sdl-scancode-e* 8) 
+(define *sdl-scancode-f* 9) 
+(define *sdl-scancode-g* 10) 
+(define *sdl-scancode-h* 11) 
+(define *sdl-scancode-i* 12) 
+(define *sdl-scancode-j* 13) 
+(define *sdl-scancode-k* 14) 
+(define *sdl-scancode-l* 15) 
+(define *sdl-scancode-m* 16) 
+(define *sdl-scancode-n* 17) 
+(define *sdl-scancode-o* 18) 
+(define *sdl-scancode-p* 19) 
+(define *sdl-scancode-q* 20) 
+(define *sdl-scancode-r* 21) 
+(define *sdl-scancode-s* 22) 
+(define *sdl-scancode-t* 23) 
+(define *sdl-scancode-u* 24) 
+(define *sdl-scancode-v* 25) 
+(define *sdl-scancode-w* 26) 
+(define *sdl-scancode-x* 27) 
+(define *sdl-scancode-y* 28) 
+(define *sdl-scancode-z* 29) 
+(define *sdl-scancode-1* 30) 
+(define *sdl-scancode-2* 31) 
+(define *sdl-scancode-3* 32) 
+(define *sdl-scancode-4* 33) 
+(define *sdl-scancode-5* 34) 
+(define *sdl-scancode-6* 35) 
+(define *sdl-scancode-7* 36) 
+(define *sdl-scancode-8* 37) 
+(define *sdl-scancode-9* 38) 
+(define *sdl-scancode-0* 39) 
+(define *sdl-scancode-return* 40) 
+(define *sdl-scancode-escape* 41) 
+(define *sdl-scancode-backspace* 42) 
+(define *sdl-scancode-tab* 43) 
+(define *sdl-scancode-space* 44) 
+(define *sdl-scancode-minus* 45) 
+(define *sdl-scancode-equals* 46) 
+(define *sdl-scancode-leftbracket* 47) 
+(define *sdl-scancode-rightbracket* 48) 
+(define *sdl-scancode-backslash* 49) 
+(define *sdl-scancode-nonushash* 50) 
+(define *sdl-scancode-semicolon* 51) 
+(define *sdl-scancode-apostrophe* 52) 
+(define *sdl-scancode-grave* 53) 
+(define *sdl-scancode-comma* 54) 
+(define *sdl-scancode-period* 55) 
+(define *sdl-scancode-slash* 56) 
+(define *sdl-scancode-capslock* 57) 
+(define *sdl-scancode-f1* 58) 
+(define *sdl-scancode-f2* 59) 
+(define *sdl-scancode-f3* 60) 
+(define *sdl-scancode-f4* 61) 
+(define *sdl-scancode-f5* 62) 
+(define *sdl-scancode-f6* 63) 
+(define *sdl-scancode-f7* 64) 
+(define *sdl-scancode-f8* 65) 
+(define *sdl-scancode-f9* 66) 
+(define *sdl-scancode-f10* 67) 
+(define *sdl-scancode-f11* 68) 
+(define *sdl-scancode-f12* 69) 
+(define *sdl-scancode-printscreen* 70) 
+(define *sdl-scancode-scrolllock* 71) 
+(define *sdl-scancode-pause* 72) 
+(define *sdl-scancode-insert* 73) 
+(define *sdl-scancode-home* 74) 
+(define *sdl-scancode-pageup* 75) 
+(define *sdl-scancode-delete* 76) 
+(define *sdl-scancode-end* 77) 
+(define *sdl-scancode-pagedown* 78) 
+(define *sdl-scancode-right* 79) 
+(define *sdl-scancode-left* 80) 
+(define *sdl-scancode-down* 81) 
+(define *sdl-scancode-up* 82) 
+(define *sdl-scancode-numlockclear* 83) 
+(define *sdl-scancode-kp-divide* 84) 
+(define *sdl-scancode-kp-multiply* 85) 
+(define *sdl-scancode-kp-minus* 86) 
+(define *sdl-scancode-kp-plus* 87) 
+(define *sdl-scancode-kp-enter* 88) 
+(define *sdl-scancode-kp-1* 89) 
+(define *sdl-scancode-kp-2* 90) 
+(define *sdl-scancode-kp-3* 91) 
+(define *sdl-scancode-kp-4* 92) 
+(define *sdl-scancode-kp-5* 93) 
+(define *sdl-scancode-kp-6* 94) 
+(define *sdl-scancode-kp-7* 95) 
+(define *sdl-scancode-kp-8* 96) 
+(define *sdl-scancode-kp-9* 97) 
+(define *sdl-scancode-kp-0* 98) 
+(define *sdl-scancode-kp-period* 99) 
+(define *sdl-scancode-nonusbackslash* 100) 
+(define *sdl-scancode-application* 101) 
+(define *sdl-scancode-power* 102) 
+(define *sdl-scancode-kp-equals* 103) 
+(define *sdl-scancode-f13* 104) 
+(define *sdl-scancode-f14* 105) 
+(define *sdl-scancode-f15* 106) 
+(define *sdl-scancode-f16* 107) 
+(define *sdl-scancode-f17* 108) 
+(define *sdl-scancode-f18* 109) 
+(define *sdl-scancode-f19* 110) 
+(define *sdl-scancode-f20* 111) 
+(define *sdl-scancode-f21* 112) 
+(define *sdl-scancode-f22* 113) 
+(define *sdl-scancode-f23* 114) 
+(define *sdl-scancode-f24* 115) 
+(define *sdl-scancode-execute* 116) 
+(define *sdl-scancode-help* 117) 
+(define *sdl-scancode-menu* 118) 
+(define *sdl-scancode-select* 119) 
+(define *sdl-scancode-stop* 120) 
+(define *sdl-scancode-again* 121) 
+(define *sdl-scancode-undo* 122) 
+(define *sdl-scancode-cut* 123) 
+(define *sdl-scancode-copy* 124) 
+(define *sdl-scancode-paste* 125) 
+(define *sdl-scancode-find* 126) 
+(define *sdl-scancode-mute* 127) 
+(define *sdl-scancode-volumeup* 128) 
+(define *sdl-scancode-volumedown* 129) 
+(define *sdl-scancode-lockingcapslock* 130) 
+(define *sdl-scancode-lockingnumlock* 131) 
+(define *sdl-scancode-lockingscrolllock* 132) 
+(define *sdl-scancode-kp-comma* 133) 
+(define *sdl-scancode-kp-equalsas400* 134) 
+(define *sdl-scancode-international1* 135) 
+(define *sdl-scancode-international2* 136) 
+(define *sdl-scancode-international3* 137) 
+(define *sdl-scancode-international4* 138) 
+(define *sdl-scancode-international5* 139) 
+(define *sdl-scancode-international6* 140) 
+(define *sdl-scancode-international7* 141) 
+(define *sdl-scancode-international8* 142) 
+(define *sdl-scancode-international9* 143) 
+(define *sdl-scancode-lang1* 144) 
+(define *sdl-scancode-lang2* 145) 
+(define *sdl-scancode-lang3* 146) 
+(define *sdl-scancode-lang4* 147) 
+(define *sdl-scancode-lang5* 148) 
+(define *sdl-scancode-lang6* 149) 
+(define *sdl-scancode-lang7* 150) 
+(define *sdl-scancode-lang8* 151) 
+(define *sdl-scancode-lang9* 152) 
+(define *sdl-scancode-alterase* 153) 
+(define *sdl-scancode-sysreq* 154) 
+(define *sdl-scancode-cancel* 155) 
+(define *sdl-scancode-clear* 156) 
+(define *sdl-scancode-prior* 157) 
+(define *sdl-scancode-return2* 158) 
+(define *sdl-scancode-separator* 159) 
+(define *sdl-scancode-out* 160) 
+(define *sdl-scancode-oper* 161) 
+(define *sdl-scancode-clearagain* 162) 
+(define *sdl-scancode-crsel* 163) 
+(define *sdl-scancode-exsel* 164) 
+(define *sdl-scancode-kp-00* 176) 
+(define *sdl-scancode-kp-000* 177) 
+(define *sdl-scancode-thousandsseparator* 178) 
+(define *sdl-scancode-decimalseparator* 179) 
+(define *sdl-scancode-currencyunit* 180) 
+(define *sdl-scancode-currencysubunit* 181) 
+(define *sdl-scancode-kp-leftparen* 182) 
+(define *sdl-scancode-kp-rightparen* 183) 
+(define *sdl-scancode-kp-leftbrace* 184) 
+(define *sdl-scancode-kp-rightbrace* 185) 
+(define *sdl-scancode-kp-tab* 186) 
+(define *sdl-scancode-kp-backspace* 187) 
+(define *sdl-scancode-kp-a* 188) 
+(define *sdl-scancode-kp-b* 189) 
+(define *sdl-scancode-kp-c* 190) 
+(define *sdl-scancode-kp-d* 191) 
+(define *sdl-scancode-kp-e* 192) 
+(define *sdl-scancode-kp-f* 193) 
+(define *sdl-scancode-kp-xor* 194) 
+(define *sdl-scancode-kp-power* 195) 
+(define *sdl-scancode-kp-percent* 196) 
+(define *sdl-scancode-kp-less* 197) 
+(define *sdl-scancode-kp-greater* 198) 
+(define *sdl-scancode-kp-ampersand* 199) 
+(define *sdl-scancode-kp-dblampersand* 200) 
+(define *sdl-scancode-kp-verticalbar* 201) 
+(define *sdl-scancode-kp-dblverticalbar* 202) 
+(define *sdl-scancode-kp-colon* 203) 
+(define *sdl-scancode-kp-hash* 204) 
+(define *sdl-scancode-kp-space* 205) 
+(define *sdl-scancode-kp-at* 206) 
+(define *sdl-scancode-kp-exclam* 207) 
+(define *sdl-scancode-kp-memstore* 208) 
+(define *sdl-scancode-kp-memrecall* 209) 
+(define *sdl-scancode-kp-memclear* 210) 
+(define *sdl-scancode-kp-memadd* 211) 
+(define *sdl-scancode-kp-memsubtract* 212) 
+(define *sdl-scancode-kp-memmultiply* 213) 
+(define *sdl-scancode-kp-memdivide* 214) 
+(define *sdl-scancode-kp-plusminus* 215) 
+(define *sdl-scancode-kp-clear* 216) 
+(define *sdl-scancode-kp-clearentry* 217) 
+(define *sdl-scancode-kp-binary* 218) 
+(define *sdl-scancode-kp-octal* 219) 
+(define *sdl-scancode-kp-decimal* 220) 
+(define *sdl-scancode-kp-hexadecimal* 221) 
+(define *sdl-scancode-lctrl* 224) 
+(define *sdl-scancode-lshift* 225) 
+(define *sdl-scancode-lalt* 226) 
+(define *sdl-scancode-lgui* 227) 
+(define *sdl-scancode-rctrl* 228) 
+(define *sdl-scancode-rshift* 229) 
+(define *sdl-scancode-ralt* 230) 
+(define *sdl-scancode-rgui* 231) 
+(define *sdl-scancode-mode* 257) 
+(define *sdl-scancode-audionext* 258) 
+(define *sdl-scancode-audioprev* 259) 
+(define *sdl-scancode-audiostop* 260) 
+(define *sdl-scancode-audioplay* 261) 
+(define *sdl-scancode-audiomute* 262) 
+(define *sdl-scancode-mediaselect* 263) 
+(define *sdl-scancode-www* 264) 
+(define *sdl-scancode-mail* 265) 
+(define *sdl-scancode-calculator* 266) 
+(define *sdl-scancode-computer* 267) 
+(define *sdl-scancode-ac-search* 268) 
+(define *sdl-scancode-ac-home* 269) 
+(define *sdl-scancode-ac-back* 270) 
+(define *sdl-scancode-ac-forward* 271) 
+(define *sdl-scancode-ac-stop* 272) 
+(define *sdl-scancode-ac-refresh* 273) 
+(define *sdl-scancode-ac-bookmarks* 274) 
+(define *sdl-scancode-brightnessdown* 275) 
+(define *sdl-scancode-brightnessup* 276) 
+(define *sdl-scancode-displayswitch* 277) 
+(define *sdl-scancode-kbdillumtoggle* 278) 
+(define *sdl-scancode-kbdillumdown* 279) 
+(define *sdl-scancode-kbdillumup* 280) 
+(define *sdl-scancode-eject* 281) 
+(define *sdl-scancode-sleep* 282) 
+(define *sdl-scancode-app1* 283) 
+(define *sdl-scancode-app2* 284) 
+(define *sdl-scancode-audiorewind* 285) 
+(define *sdl-scancode-audiofastforward* 286) 
+(define *sdl-scancode-softleft* 287) 
+(define *sdl-scancode-softright* 288) 
+(define *sdl-scancode-call* 289) 
+(define *sdl-scancode-endcall* 290) 
+(define *sdl-num-scancodes* 512) 
+
+#+end_src
+
+* window event flags
+
+#+begin_src 
+
+(define *sdl-window-event-none* 0)
+(define *sdl-window-event-shown* 1)
+(define *sdl-window-event-hidden* 2)
+(define *sdl-window-event-exposed* 3)
+(define *sdl-window-event-moved* 4)
+(define *sdl-window-event-resized* 5)
+(define *sdl-window-event-changed* 6)
+(define *sdl-window-event-minimized* 7)
+(define *sdl-window-event-maximized* 8)
+(define *sdl-window-event-restored* 9)
+(define *sdl-window-event-enter* 10)
+(define *sdl-window-event-leave* 11)
+(define *sdl-window-event-focus-gained* 12)
+(define *sdl-window-event-focus-lost* 13)
+(define *sdl-window-event-close* 14)
+(define *sdl-window-event-take-focus* 15)
+(define *sdl-window-event-hit-test* 16)
+(define *sdl-window-event-icc-prof-changed* 17)
+(define *sdl-window-event-display-changed* 18)
+ 
+#+end_src
+
+
+* library pixelformat
+
+** libpixelformat.c
+
+#+begin_src :tangle yes :tangle "pixelformat/.gitignore"
+*.o  
+*.so  
+#+end_src
+
+#+begin_src :tangle yes :tangle "pixelformat/pixelformat.c"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+
+#include <math.h>
+#include <stdio.h>
+#include <stddef.h>
+
+#include <libguile.h>
+
+/* should these be static methods ? */  
+
+void pixelformat2(SDL_Surface *ptr);
+SDL_PixelFormat *pixelformat_wrapper(SDL_Surface *ptr);
+void output_check();
+unsigned char * surface_pixels(SDL_Surface *s);
+
+unsigned char * surface_pixels(SDL_Surface *s){
+  return s->pixels;
+}
+  
+
+int surface_width(SDL_Surface *s){
+  return s->w;
+}
+
+int surface_height(SDL_Surface *s){
+  return s->h;
+}
+
+
+SDL_PixelFormat *pixelformat_wrapper(SDL_Surface *ptr){
+  if(ptr){
+    return (SDL_PixelFormat *)ptr->format;
+  }
+  return 0;
+}
+
+void output_check(){
+  printf("this is an output check!\n");
+}
+
+
+void pixelformat2(SDL_Surface *ptr){
+  if(ptr){
+    char *p = (char *)ptr->format;
+    int i = 0 ;
+    for (i =0 ; i < 8 ; i ++){
+      printf("byte %d is %d\n" , i, *p);
+      p ++;	
+    }
+  }
+}
+
+
+
+/*
+try
+ (applyStretchedImage surface 1024 768)
+ => error
+guile: symbol lookup error: ./pixelformat/pixelformat.so: undefined symbol: SDL_UpperBlitScaled
+
+
+  
+int SDL_UpperBlitScaled
+    (SDL_Surface * src, const SDL_Rect * srcrect,
+    SDL_Surface * dst, SDL_Rect * dstrect);
+
+    
+ */
+
+
+SDL_Surface *applyStretchedImage(SDL_Surface *gScreenSurface, int screenWidth , int screenHeight){
+  //Apply the image stretched
+  SDL_Rect stretchRect;
+  stretchRect.x = 0;
+  stretchRect.y = 0;
+  stretchRect.w = screenWidth;
+  stretchRect.h = screenHeight;
+  SDL_Surface* gStretchedSurface;
+  // but this is equivalent to SDL_UpperBlitScaled gStretced NULL gScreen NULL
+  // no point in defining rect 
+  SDL_BlitScaled( gStretchedSurface, NULL, gScreenSurface, &stretchRect );
+  return gStretchedSurface;
+}
+
+
+
+/*
+s is scheme <pointer 0xADDRESS> object
+we need c pointer  
+
+SCM pixelformat_wrapper(SCM s){
+  SDL_Surface *ptr = (SDL_Surface *)scm_to_pointer(s);
+  //printf("pixelformat : ptr->format (%p)\n",ptr->format);
+  return scm_from_pointer(ptr->format,NULL);
+  //return pointer->scm(ptr->format);
+}
+
+void
+init_pixelformat (void)
+{
+  scm_c_define_gsubr ("pixelformat", 1, 0, 0, pixelformat_wrapper);
+}
+
+SCM
+j0_wrapper (SCM x)
+{
+  return scm_from_double (j0 (scm_to_double (x, "j0")));
+}
+
+void
+init_math_bessel (void)
+{
+  scm_c_define_gsubr ("j0", 1, 0, 0, j0_wrapper);
+}
+*/
+
+/*
+SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
+{
+    //The final texture
+    SDL_Texture* newTexture = NULL;
+
+    //Load image at specified path
+    SDL_Surface* loadedSurface = IMG_Load( path );
+    if( loadedSurface == NULL )
+    {
+        printf( "Unable to load image %s! SDL_image Error: %s\n", path, IMG_GetError() );
+    }
+    else
+    {
+        //Create texture from surface pixels
+        newTexture = SDL_CreateTextureFromSurface( render, loadedSurface );
+        if( newTexture == NULL )
+        {
+            printf( "Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError() );
+        }
+
+        //Get rid of old loaded surface
+        SDL_FreeSurface( loadedSurface );
+    }
+
+    return newTexture;
+}
+*/
+
+int size_int(){
+  size_t sz = sizeof(int);
+  //fprintf(stdout,"size of int is %zu\n",sz);
+  return sz;  
+}
+
+void show_rect(SDL_Rect *r){
+  fprintf(stdout,"rect has x,y,w,h of %d %d %d %d \n" , r->x ,r->y,r->w , r->h);
+}
+
+#+end_src
+
+** pixelformat scheme code
+
+#+begin_src  :tangle yes :tangle "pixelformat/pixelformat.scm"
+;; could be independent library but this code has been consumed by sdl2.scm
+ 
+;; pixelformat.scm
+;; load c shared library from pixelformat directory
+(use-modules (system foreign))
+(use-modules (system foreign-library))
+
+;; (load-foreign-library "libSDL2")
+;; (load-foreign-library "libSDL2_image")
+
+
+
+;;(define show-pixelformat (foreign-library-pointer "pixelformat" "show_pixelformat_format"))
+;;(define init-pixelformat (foreign-library-pointer "pixelformat" "init_pixelformat"))
+
+(define pixelformat
+  (foreign-library-function "libpixelformat" "pixelformat_wrapper"
+                            #:return-type '*
+                            #:arg-types (list '*)))
+
+(define pixelformat2
+  (foreign-library-function "libpixelformat" "pixelformat2"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+(define output-check
+  (foreign-library-function "libpixelformat" "output_check"
+                            #:return-type void
+                            #:arg-types (list)))
+
+
+(define applyStretchedImage
+  (foreign-library-function "libpixelformat" "applyStretchedImage"
+                            #:return-type '*
+                            #:arg-types (list '* int int)))
+
+
+(define size-int
+  (foreign-library-function "libpixelformat" "size_int"
+                            #:return-type int
+                            #:arg-types (list)))
+
+
+
+
+;; int SDL_UpperBlitScaled
+;;   (SDL_Surface * src, const SDL_Rect * srcrect,
+;;   SDL_Surface * dst, SDL_Rect * dstrect);
+(define sdl-upper-blit-scaled
+  (foreign-library-function "libSDL2" "SDL_UpperBlitScaled"
+                            #:return-type int
+                            #:arg-types (list '* '* '* '*)))
+  
+
+
+#|
+;; (define sdl-upper-blit-scaled
+;;   (foreign-library-function "libSDL2_image-2.0" "SDL_IMAGE2_C_FUNCTION_HERE"
+;;                             #:return-type int
+;;                             #:arg-types (list '* '* '* '*)))
+typedef enum IMG_InitFlags
+{
+    IMG_INIT_JPG    = 0x00000001,
+    IMG_INIT_PNG    = 0x00000002,
+    IMG_INIT_TIF    = 0x00000004,
+    IMG_INIT_WEBP   = 0x00000008,
+    IMG_INIT_JXL    = 0x00000010,
+    IMG_INIT_AVIF   = 0x00000020
+    } IMG_InitFlags;
+|#
+
+(define *sdl-image-init-jpg*  #x00000001)
+(define *sdl-image-init-png*  #x00000002)
+(define *sdl-image-init-tif*  #x00000004)
+(define *sdl-image-init-webp* #x00000008)
+(define *sdl-image-init-jxl*  #x00000010)
+(define *sdl-image-init-avif* #x00000020)
+
+
+;;int IMG_Init(int flags);
+(define %img-init
+  (foreign-library-function "libSDL2_image" "IMG_Init"
+                            #:return-type int
+                            #:arg-types (list int)))
+
+
+(define (image-init)
+  (let* ((flags (logior *sdl-image-init-jpg*
+			*sdl-image-init-png*
+			*sdl-image-init-tif*
+			*sdl-image-init-webp*
+			;;*sdl-image-init-jxl*
+			;;*sdl-image-init-avif*
+			))
+	 (result (%img-init flags)))
+    (= result flags)))
+
+;;SDL_Surface * IMG_Load(const char *file);
+(define %img-load
+  (foreign-library-function "libSDL2_image" "IMG_Load"
+                            #:return-type '*
+                            #:arg-types (list '*)))
+
+;; convert guile string to char* 
+(define (image-load path)
+  (%img-load (string->pointer path)))
+
+ 
+;; (define sdl-upper-blit-scaled
+;;   (foreign-library-function "libSDL2_ttf" "TTF-C-FUNCTION-HERE"
+;;                             #:return-type int
+;;                             #:arg-types (list '* '* '* '*)))
+
+;; (define sdl-upper-blit-scaled
+;;   (foreign-library-function "libSDL2_mixer" "MIXER-C-FUNCTION-HERE"
+;;                             #:return-type int
+;;                             #:arg-types (list '* '* '* '*)))
+
+
+;; SDL_Renderer * SDL_CreateRenderer(SDL_Window * window,
+;;                        int index, Uint32 flags);
+(define %sdl-create-renderer
+  (foreign-library-function "libSDL2" "SDL_CreateRenderer"
+                            #:return-type '*
+                            #:arg-types (list '* int uint32)))
+
+
+(define %sdl-surface-pixels
+ "unsigned char * surface_pixels(SDL_Surface *s)"  
+  (foreign-library-function "libpixelformat" "surface_pixels"
+                            #:return-type '*
+                            #:arg-types (list '*)))
+  
+
+;; int surface_width(SDL_Surface *s)
+(define %sdl-surface-width
+  (foreign-library-function "libpixelformat" "surface_width"
+                            #:return-type int
+                            #:arg-types (list '*)))
+
+;;int surface_height(SDL_Surface *s)
+(define %sdl-surface-height
+  (foreign-library-function "libpixelformat" "surface_height"
+                            #:return-type int
+                            #:arg-types (list '*)))
+
+
+
+
+;; SDL_SetRenderDrawColor
+;; int SDL_SetRenderDrawColor(SDL_Renderer * renderer,
+;;                    Uint8 r, Uint8 g, Uint8 b,
+;;                    Uint8 a);
+(define sdl-set-render-draw-color
+  (foreign-library-function "libSDL2" "SDL_SetRenderDrawColor"
+                            #:return-type int
+                            #:arg-types (list '* uint8 uint8 uint8 uint8)))
+
+(define show-rect
+  (foreign-library-function "libpixelformat" "show_rect"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+;; (define %load-texture
+;;   (foreign-library-function "libpixelformat" "loadTexture"
+;;                             #:return-type '*
+;;                             #:arg-types (list '* '*)))
+  
+;; (define (load-texture s render)
+;;   (%load-texture (string->pointer s) render))
+
+
+
+#|
+typedef enum SDL_RendererFlags
+{
+    SDL_RENDERER_SOFTWARE = 0x00000001,         /**< The renderer is a software fallback */
+    SDL_RENDERER_ACCELERATED = 0x00000002,      /**< The renderer uses hardware
+                                                     acceleration */
+    SDL_RENDERER_PRESENTVSYNC = 0x00000004,     /**< Present is synchronized
+                                                     with the refresh rate */
+    SDL_RENDERER_TARGETTEXTURE = 0x00000008     /**< The renderer supports
+                                                     rendering to texture */
+} SDL_RendererFlags;
+|#
+
+(define *sdl-renderer-software* #x00000001)
+(define *sdl-renderer-accelerated* #x00000002)
+(define *sdl-renderer-present-vsync* #x00000004)
+(define *sdl-renderer-target-texture* #x00000008)
+
+;; if %null-pointer create renderer failed
+(define (create-renderer window)
+  (%sdl-create-renderer window -1 (logior *sdl-renderer-accelerated*
+					  *sdl-renderer-target-texture*)))
+
+#+end_src
+
+** libpixelformat makefile
+
+#+begin_src :tangle yes :tangle "pixelformat/Makefile"
+ 
+CC=clang
+CFLAGS_SDL=`pkg-config --cflags sdl2`
+CFLAGS_GUILE=`pkg-config --cflags guile-3.0`
+
+
+all:	libpixelformat.so
+
+libpixelformat.so:	pixelformat.c
+	rm -f libpixelformat.so
+	${CC} -fPIC -shared -o libpixelformat.so ${CFLAGS_SDL} ${CFLAGS_GUILE} pixelformat.c
+
+install:
+	cp -v libpixelformat.so /opt/guile/lib/guile/3.0/extensions
+
+#+end_src
+
+#+begin_src 
+ 
+;;(define show-pixelformat (foreign-library-pointer "pixelformat" "show_pixelformat_format"))
+;;(define init-pixelformat (foreign-library-pointer "pixelformat" "init_pixelformat"))
+
+(define pixelformat
+  (foreign-library-function "libpixelformat" "pixelformat_wrapper"
+                            #:return-type '*
+                            #:arg-types (list '*)))
+
+(define pixelformat2
+  (foreign-library-function "libpixelformat" "pixelformat2"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+(define output-check
+  (foreign-library-function "libpixelformat" "output_check"
+                            #:return-type void
+                            #:arg-types (list)))
+
+
+(define applyStretchedImage
+  (foreign-library-function "libpixelformat" "applyStretchedImage"
+                            #:return-type '*
+                            #:arg-types (list '* int int)))
+
+
+(define size-int
+  (foreign-library-function "libpixelformat" "size_int"
+                            #:return-type int
+                            #:arg-types (list)))
+
+
+
+
+;; int SDL_UpperBlitScaled
+;;   (SDL_Surface * src, const SDL_Rect * srcrect,
+;;   SDL_Surface * dst, SDL_Rect * dstrect);
+(define sdl-upper-blit-scaled
+  (foreign-library-function "libSDL2" "SDL_UpperBlitScaled"
+                            #:return-type int
+                            #:arg-types (list '* '* '* '*)))
+  
+
+
+#|
+;; (define sdl-upper-blit-scaled
+;;   (foreign-library-function "libSDL2_image-2.0" "SDL_IMAGE2_C_FUNCTION_HERE"
+;;                             #:return-type int
+;;                             #:arg-types (list '* '* '* '*)))
+typedef enum IMG_InitFlags
+{
+    IMG_INIT_JPG    = 0x00000001,
+    IMG_INIT_PNG    = 0x00000002,
+    IMG_INIT_TIF    = 0x00000004,
+    IMG_INIT_WEBP   = 0x00000008,
+    IMG_INIT_JXL    = 0x00000010,
+    IMG_INIT_AVIF   = 0x00000020
+    } IMG_InitFlags;
+|#
+
+(define *sdl-image-init-jpg*  #x00000001)
+(define *sdl-image-init-png*  #x00000002)
+(define *sdl-image-init-tif*  #x00000004)
+(define *sdl-image-init-webp* #x00000008)
+(define *sdl-image-init-jxl*  #x00000010)
+(define *sdl-image-init-avif* #x00000020)
+
+
+;;int IMG_Init(int flags);
+(define %img-init
+  (foreign-library-function "libSDL2_image" "IMG_Init"
+                            #:return-type int
+                            #:arg-types (list int)))
+
+
+(define (image-init)
+  (let* ((flags (logior *sdl-image-init-jpg*
+			*sdl-image-init-png*
+			*sdl-image-init-tif*
+			*sdl-image-init-webp*
+			;;*sdl-image-init-jxl*
+			;;*sdl-image-init-avif*
+			))
+	 (result (%img-init flags)))
+    (= result flags)))
+
+;;SDL_Surface * IMG_Load(const char *file);
+(define %img-load
+  (foreign-library-function "libSDL2_image" "IMG_Load"
+                            #:return-type '*
+                            #:arg-types (list '*)))
+
+;; convert guile string to char* 
+(define (image-load path)
+  (%img-load (string->pointer path)))
+
+ 
+;; (define sdl-upper-blit-scaled
+;;   (foreign-library-function "libSDL2_ttf" "TTF-C-FUNCTION-HERE"
+;;                             #:return-type int
+;;                             #:arg-types (list '* '* '* '*)))
+
+;; (define sdl-upper-blit-scaled
+;;   (foreign-library-function "libSDL2_mixer" "MIXER-C-FUNCTION-HERE"
+;;                             #:return-type int
+;;                             #:arg-types (list '* '* '* '*)))
+
+
+;; SDL_Renderer * SDL_CreateRenderer(SDL_Window * window,
+;;                        int index, Uint32 flags);
+(define %sdl-create-renderer
+  (foreign-library-function "libSDL2" "SDL_CreateRenderer"
+                            #:return-type '*
+                            #:arg-types (list '* int uint32)))
+
+;; int surface_width(SDL_Surface *s)
+(define %sdl-surface-width
+  (foreign-library-function "libpixelformat" "surface_width"
+                            #:return-type int
+                            #:arg-types (list '*)))
+
+;;int surface_height(SDL_Surface *s)
+(define %sdl-surface-height
+  (foreign-library-function "libpixelformat" "surface_height"
+                            #:return-type int
+                            #:arg-types (list '*)))
+
+
+
+
+;; SDL_SetRenderDrawColor
+;; int SDL_SetRenderDrawColor(SDL_Renderer * renderer,
+;;                    Uint8 r, Uint8 g, Uint8 b,
+;;                    Uint8 a);
+(define sdl-set-render-draw-color
+  (foreign-library-function "libSDL2" "SDL_SetRenderDrawColor"
+                            #:return-type int
+                            #:arg-types (list '* uint8 uint8 uint8 uint8)))
+
+(define show-rect
+  (foreign-library-function "libpixelformat" "show_rect"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+;; (define %load-texture
+;;   (foreign-library-function "libpixelformat" "loadTexture"
+;;                             #:return-type '*
+;;                             #:arg-types (list '* '*)))
+  
+;; (define (load-texture s render)
+;;   (%load-texture (string->pointer s) render))
+
+
+
+#|
+typedef enum SDL_RendererFlags
+{
+    SDL_RENDERER_SOFTWARE = 0x00000001,         /**< The renderer is a software fallback */
+    SDL_RENDERER_ACCELERATED = 0x00000002,      /**< The renderer uses hardware
+                                                     acceleration */
+    SDL_RENDERER_PRESENTVSYNC = 0x00000004,     /**< Present is synchronized
+                                                     with the refresh rate */
+    SDL_RENDERER_TARGETTEXTURE = 0x00000008     /**< The renderer supports
+                                                     rendering to texture */
+} SDL_RendererFlags;
+|#
+
+(define *sdl-renderer-software* #x00000001)
+(define *sdl-renderer-accelerated* #x00000002)
+(define *sdl-renderer-present-vsync* #x00000004)
+(define *sdl-renderer-target-texture* #x00000008)
+
+;; if %null-pointer create renderer failed
+(define (create-renderer window)
+  (%sdl-create-renderer window -1 (logior *sdl-renderer-accelerated*
+					  *sdl-renderer-target-texture*)))
+
+
+
+#+end_src
+
+#+begin_src 
+ 
+#+end_src
+
+#+begin_src 
+ 
+#+end_src
+
+#+begin_src 
+ 
+#+end_src
+
+* Demos
+
+* Demo unix less
+
+keyboard-fn-vector is just an array suitable hold all key scancodes .
+
+when user presses a key - the scancode , is used an index into keyboard-fn-vector.
+
+if there is a procedure stored at that index , then that procedure is executed . 
+
+some animated square blocks on screen - a thousand ping pong blocks.
+
+initialize-blocks - makes a big array with each element holding x y and velocity vx vy.
+
+update-blocks adds a small value to the respective x y position.
+
+show-blocks moves them to screen under render.
+
+#+begin_src :tangle yes :tangle "demos/unix-less.scm"
+;; dependencies 
+;; 1. libpixelformat.so   
+;;  
+;;
+;; /opt/guile/lib/guile/3.0/extensions/
+;; └── libpixelformat.so   <<--- this has %img-load which we need
+;; 
+;; 
+;; macro files pre-installed at /opt/guile/share/guile/site/3.0/macros
+;;  
+;; /opt/guile/share/guile/site/3.0/macros
+;; ├── fcase.scm
+;; └── inc.scm
+;;
+;; sdl ffi files in graphics directory
+;;  
+;; ├── graphics
+;; │   └── sdl2.scm
+;; ├── demos
+;; │   └── unix-less.scm
+;;  
+;; rlwrap guile -L ../ --
+;; > (load "unix-less.scm")
+;;
+;; 
+(use-modules (system foreign)) ;; %null-pointer
+(use-modules (system foreign-library))
+(use-modules (rnrs bytevectors))
+  
+(use-modules (ice-9 format))
+(use-modules (macros fcase))
+(use-modules (macros inc))
+;; use sdl graphics module
+(use-modules (graphics sdl2))  
+;; read-line
+(use-modules (ice-9 rdelim))
+;; pp pretty printer  
+(use-modules (ice-9 pretty-print)) 
+(define pp pretty-print)
+
+
+(define *keyboard-fn-vector* (make-vector 516 #f)) ;; somewhat largeer than 512
+
+(define (register-keyboard-fn i fn)
+  (vector-set! *keyboard-fn-vector* i fn))
+
+(define (call-keyboard-fn i)
+  (let ((fn (vector-ref *keyboard-fn-vector* i)))
+    (cond
+     ((procedure? fn) (fn))
+     (#t (format #t "there is no keyboard procedure fn dedicated to ~a ~%" i)))))
+
+
+(register-keyboard-fn *sdl-scancode-unknown* (lambda () (format #t "user pressed sdl-scancode-unknown key ~%")))
+(register-keyboard-fn *sdl-scancode-a* (lambda () (format #t "user pressed sdl-scancode-a key ~%")))
+(register-keyboard-fn *sdl-scancode-b* (lambda () (format #t "user pressed sdl-scancode-b key ~%")))
+(register-keyboard-fn *sdl-scancode-c* (lambda () (format #t "user pressed sdl-scancode-c key ~%")))
+(register-keyboard-fn *sdl-scancode-d* (lambda () (format #t "user pressed sdl-scancode-d key ~%")))
+(register-keyboard-fn *sdl-scancode-e* (lambda () (format #t "user pressed sdl-scancode-e key ~%")))
+(register-keyboard-fn *sdl-scancode-f* (lambda () (format #t "user pressed sdl-scancode-f key ~%")))
+(register-keyboard-fn *sdl-scancode-g* (lambda () (format #t "user pressed sdl-scancode-g key ~%")))
+(register-keyboard-fn *sdl-scancode-h* (lambda () (format #t "user pressed sdl-scancode-h key ~%")))
+(register-keyboard-fn *sdl-scancode-i* (lambda () (format #t "user pressed sdl-scancode-i key ~%")))
+(register-keyboard-fn *sdl-scancode-j* (lambda () (format #t "user pressed sdl-scancode-j key ~%")))
+(register-keyboard-fn *sdl-scancode-k* (lambda () (format #t "user pressed sdl-scancode-k key ~%")))
+(register-keyboard-fn *sdl-scancode-l* (lambda () (format #t "user pressed sdl-scancode-l key ~%")))
+(register-keyboard-fn *sdl-scancode-m* (lambda () (format #t "user pressed sdl-scancode-m key ~%")))
+(register-keyboard-fn *sdl-scancode-n* (lambda () (format #t "user pressed sdl-scancode-n key ~%")))
+(register-keyboard-fn *sdl-scancode-o* (lambda () (format #t "user pressed sdl-scancode-o key ~%")))
+(register-keyboard-fn *sdl-scancode-p* (lambda () (format #t "user pressed sdl-scancode-p key ~%")))
+(register-keyboard-fn *sdl-scancode-q* (lambda () (format #t "user pressed sdl-scancode-q key ~%")))
+(register-keyboard-fn *sdl-scancode-r* (lambda () (format #t "user pressed sdl-scancode-r key ~%")))
+(register-keyboard-fn *sdl-scancode-s* (lambda () (format #t "user pressed sdl-scancode-s key ~%")))
+(register-keyboard-fn *sdl-scancode-t* (lambda () (format #t "user pressed sdl-scancode-t key ~%")))
+(register-keyboard-fn *sdl-scancode-u* (lambda () (format #t "user pressed sdl-scancode-u key ~%")))
+(register-keyboard-fn *sdl-scancode-v* (lambda () (format #t "user pressed sdl-scancode-v key ~%")))
+(register-keyboard-fn *sdl-scancode-w* (lambda () (format #t "user pressed sdl-scancode-w key ~%")))
+(register-keyboard-fn *sdl-scancode-x* (lambda () (format #t "user pressed sdl-scancode-x key ~%")))
+(register-keyboard-fn *sdl-scancode-y* (lambda () (format #t "user pressed sdl-scancode-y key ~%")))
+(register-keyboard-fn *sdl-scancode-z* (lambda () (format #t "user pressed sdl-scancode-z key ~%")))
+(register-keyboard-fn *sdl-scancode-1* (lambda () (format #t "user pressed sdl-scancode-1 key ~%")))
+(register-keyboard-fn *sdl-scancode-2* (lambda () (format #t "user pressed sdl-scancode-2 key ~%")))
+(register-keyboard-fn *sdl-scancode-3* (lambda () (format #t "user pressed sdl-scancode-3 key ~%")))
+(register-keyboard-fn *sdl-scancode-4* (lambda () (format #t "user pressed sdl-scancode-4 key ~%")))
+(register-keyboard-fn *sdl-scancode-5* (lambda () (format #t "user pressed sdl-scancode-5 key ~%")))
+(register-keyboard-fn *sdl-scancode-6* (lambda () (format #t "user pressed sdl-scancode-6 key ~%")))
+(register-keyboard-fn *sdl-scancode-7* (lambda () (format #t "user pressed sdl-scancode-7 key ~%")))
+(register-keyboard-fn *sdl-scancode-8* (lambda () (format #t "user pressed sdl-scancode-8 key ~%")))
+(register-keyboard-fn *sdl-scancode-9* (lambda () (format #t "user pressed sdl-scancode-9 key ~%")))
+(register-keyboard-fn *sdl-scancode-0* (lambda () (format #t "user pressed sdl-scancode-0 key ~%")))
+(register-keyboard-fn *sdl-scancode-return* (lambda () (format #t "user pressed sdl-scancode-return key ~%")))
+(register-keyboard-fn *sdl-scancode-escape* (lambda () (format #t "user pressed sdl-scancode-escape key ~%")))
+(register-keyboard-fn *sdl-scancode-backspace* (lambda () (format #t "user pressed sdl-scancode-backspace key ~%")))
+(register-keyboard-fn *sdl-scancode-tab* (lambda () (format #t "user pressed sdl-scancode-tab key ~%")))
+(register-keyboard-fn *sdl-scancode-space* (lambda () (format #t "user pressed sdl-scancode-space key ~%")))
+(register-keyboard-fn *sdl-scancode-minus* (lambda () (format #t "user pressed sdl-scancode-minus key ~%")))
+(register-keyboard-fn *sdl-scancode-equals* (lambda () (format #t "user pressed sdl-scancode-equals key ~%")))
+(register-keyboard-fn *sdl-scancode-leftbracket* (lambda () (format #t "user pressed sdl-scancode-leftbracket key ~%")))
+(register-keyboard-fn *sdl-scancode-rightbracket* (lambda () (format #t "user pressed sdl-scancode-rightbracket key ~%")))
+(register-keyboard-fn *sdl-scancode-backslash* (lambda () (format #t "user pressed sdl-scancode-backslash key ~%")))
+(register-keyboard-fn *sdl-scancode-nonushash* (lambda () (format #t "user pressed sdl-scancode-nonushash key ~%")))
+(register-keyboard-fn *sdl-scancode-semicolon* (lambda () (format #t "user pressed sdl-scancode-semicolon key ~%")))
+(register-keyboard-fn *sdl-scancode-apostrophe* (lambda () (format #t "user pressed sdl-scancode-apostrophe key ~%")))
+(register-keyboard-fn *sdl-scancode-grave* (lambda () (format #t "user pressed sdl-scancode-grave key ~%")))
+(register-keyboard-fn *sdl-scancode-comma* (lambda () (format #t "user pressed sdl-scancode-comma key ~%")))
+(register-keyboard-fn *sdl-scancode-period* (lambda () (format #t "user pressed sdl-scancode-period key ~%")))
+(register-keyboard-fn *sdl-scancode-slash* (lambda () (format #t "user pressed sdl-scancode-slash key ~%")))
+(register-keyboard-fn *sdl-scancode-capslock* (lambda () (format #t "user pressed sdl-scancode-capslock key ~%")))
+(register-keyboard-fn *sdl-scancode-f1* (lambda () (format #t "user pressed sdl-scancode-f1 key ~%")))
+(register-keyboard-fn *sdl-scancode-f2* (lambda () (format #t "user pressed sdl-scancode-f2 key ~%")))
+(register-keyboard-fn *sdl-scancode-f3* (lambda () (format #t "user pressed sdl-scancode-f3 key ~%")))
+(register-keyboard-fn *sdl-scancode-f4* (lambda () (format #t "user pressed sdl-scancode-f4 key ~%")))
+(register-keyboard-fn *sdl-scancode-f5* (lambda () (format #t "user pressed sdl-scancode-f5 key ~%")))
+(register-keyboard-fn *sdl-scancode-f6* (lambda () (format #t "user pressed sdl-scancode-f6 key ~%")))
+(register-keyboard-fn *sdl-scancode-f7* (lambda () (format #t "user pressed sdl-scancode-f7 key ~%")))
+(register-keyboard-fn *sdl-scancode-f8* (lambda () (format #t "user pressed sdl-scancode-f8 key ~%")))
+(register-keyboard-fn *sdl-scancode-f9* (lambda () (format #t "user pressed sdl-scancode-f9 key ~%")))
+(register-keyboard-fn *sdl-scancode-f10* (lambda () (format #t "user pressed sdl-scancode-f10 key ~%")))
+(register-keyboard-fn *sdl-scancode-f11* (lambda () (format #t "user pressed sdl-scancode-f11 key ~%")))
+(register-keyboard-fn *sdl-scancode-f12* (lambda () (format #t "user pressed sdl-scancode-f12 key ~%")))
+(register-keyboard-fn *sdl-scancode-printscreen* (lambda () (format #t "user pressed sdl-scancode-printscreen key ~%")))
+(register-keyboard-fn *sdl-scancode-scrolllock* (lambda () (format #t "user pressed sdl-scancode-scrolllock key ~%")))
+(register-keyboard-fn *sdl-scancode-pause* (lambda () (format #t "user pressed sdl-scancode-pause key ~%")))
+(register-keyboard-fn *sdl-scancode-insert* (lambda () (format #t "user pressed sdl-scancode-insert key ~%")))
+(register-keyboard-fn *sdl-scancode-home* (lambda () (format #t "user pressed sdl-scancode-home key ~%")))
+(register-keyboard-fn *sdl-scancode-pageup* (lambda () (format #t "user pressed sdl-scancode-pageup key ~%")))
+(register-keyboard-fn *sdl-scancode-delete* (lambda () (format #t "user pressed sdl-scancode-delete key ~%")))
+(register-keyboard-fn *sdl-scancode-end* (lambda () (format #t "user pressed sdl-scancode-end key ~%")))
+(register-keyboard-fn *sdl-scancode-pagedown* (lambda () (format #t "user pressed sdl-scancode-pagedown key ~%")))
+(register-keyboard-fn *sdl-scancode-right* (lambda () (format #t "user pressed sdl-scancode-right key ~%")))
+(register-keyboard-fn *sdl-scancode-left* (lambda () (format #t "user pressed sdl-scancode-left key ~%")))
+(register-keyboard-fn *sdl-scancode-down* (lambda () (format #t "user pressed sdl-scancode-down key ~%")))
+(register-keyboard-fn *sdl-scancode-up* (lambda () (format #t "user pressed sdl-scancode-up key ~%")))
+(register-keyboard-fn *sdl-scancode-numlockclear* (lambda () (format #t "user pressed sdl-scancode-numlockclear key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-divide* (lambda () (format #t "user pressed sdl-scancode-kp-divide key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-multiply* (lambda () (format #t "user pressed sdl-scancode-kp-multiply key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-minus* (lambda () (format #t "user pressed sdl-scancode-kp-minus key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-plus* (lambda () (format #t "user pressed sdl-scancode-kp-plus key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-enter* (lambda () (format #t "user pressed sdl-scancode-kp-enter key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-1* (lambda () (format #t "user pressed sdl-scancode-kp-1 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-2* (lambda () (format #t "user pressed sdl-scancode-kp-2 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-3* (lambda () (format #t "user pressed sdl-scancode-kp-3 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-4* (lambda () (format #t "user pressed sdl-scancode-kp-4 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-5* (lambda () (format #t "user pressed sdl-scancode-kp-5 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-6* (lambda () (format #t "user pressed sdl-scancode-kp-6 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-7* (lambda () (format #t "user pressed sdl-scancode-kp-7 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-8* (lambda () (format #t "user pressed sdl-scancode-kp-8 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-9* (lambda () (format #t "user pressed sdl-scancode-kp-9 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-0* (lambda () (format #t "user pressed sdl-scancode-kp-0 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-period* (lambda () (format #t "user pressed sdl-scancode-kp-period key ~%")))
+(register-keyboard-fn *sdl-scancode-nonusbackslash* (lambda () (format #t "user pressed sdl-scancode-nonusbackslash key ~%")))
+(register-keyboard-fn *sdl-scancode-application* (lambda () (format #t "user pressed sdl-scancode-application key ~%")))
+(register-keyboard-fn *sdl-scancode-power* (lambda () (format #t "user pressed sdl-scancode-power key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-equals* (lambda () (format #t "user pressed sdl-scancode-kp-equals key ~%")))
+(register-keyboard-fn *sdl-scancode-f13* (lambda () (format #t "user pressed sdl-scancode-f13 key ~%")))
+(register-keyboard-fn *sdl-scancode-f14* (lambda () (format #t "user pressed sdl-scancode-f14 key ~%")))
+(register-keyboard-fn *sdl-scancode-f15* (lambda () (format #t "user pressed sdl-scancode-f15 key ~%")))
+(register-keyboard-fn *sdl-scancode-f16* (lambda () (format #t "user pressed sdl-scancode-f16 key ~%")))
+(register-keyboard-fn *sdl-scancode-f17* (lambda () (format #t "user pressed sdl-scancode-f17 key ~%")))
+(register-keyboard-fn *sdl-scancode-f18* (lambda () (format #t "user pressed sdl-scancode-f18 key ~%")))
+(register-keyboard-fn *sdl-scancode-f19* (lambda () (format #t "user pressed sdl-scancode-f19 key ~%")))
+(register-keyboard-fn *sdl-scancode-f20* (lambda () (format #t "user pressed sdl-scancode-f20 key ~%")))
+(register-keyboard-fn *sdl-scancode-f21* (lambda () (format #t "user pressed sdl-scancode-f21 key ~%")))
+(register-keyboard-fn *sdl-scancode-f22* (lambda () (format #t "user pressed sdl-scancode-f22 key ~%")))
+(register-keyboard-fn *sdl-scancode-f23* (lambda () (format #t "user pressed sdl-scancode-f23 key ~%")))
+(register-keyboard-fn *sdl-scancode-f24* (lambda () (format #t "user pressed sdl-scancode-f24 key ~%")))
+(register-keyboard-fn *sdl-scancode-execute* (lambda () (format #t "user pressed sdl-scancode-execute key ~%")))
+(register-keyboard-fn *sdl-scancode-help* (lambda () (format #t "user pressed sdl-scancode-help key ~%")))
+(register-keyboard-fn *sdl-scancode-menu* (lambda () (format #t "user pressed sdl-scancode-menu key ~%")))
+(register-keyboard-fn *sdl-scancode-select* (lambda () (format #t "user pressed sdl-scancode-select key ~%")))
+(register-keyboard-fn *sdl-scancode-stop* (lambda () (format #t "user pressed sdl-scancode-stop key ~%")))
+(register-keyboard-fn *sdl-scancode-again* (lambda () (format #t "user pressed sdl-scancode-again key ~%")))
+(register-keyboard-fn *sdl-scancode-undo* (lambda () (format #t "user pressed sdl-scancode-undo key ~%")))
+(register-keyboard-fn *sdl-scancode-cut* (lambda () (format #t "user pressed sdl-scancode-cut key ~%")))
+(register-keyboard-fn *sdl-scancode-copy* (lambda () (format #t "user pressed sdl-scancode-copy key ~%")))
+(register-keyboard-fn *sdl-scancode-paste* (lambda () (format #t "user pressed sdl-scancode-paste key ~%")))
+(register-keyboard-fn *sdl-scancode-find* (lambda () (format #t "user pressed sdl-scancode-find key ~%")))
+(register-keyboard-fn *sdl-scancode-mute* (lambda () (format #t "user pressed sdl-scancode-mute key ~%")))
+(register-keyboard-fn *sdl-scancode-volumeup* (lambda () (format #t "user pressed sdl-scancode-volumeup key ~%")))
+(register-keyboard-fn *sdl-scancode-volumedown* (lambda () (format #t "user pressed sdl-scancode-volumedown key ~%")))
+(register-keyboard-fn *sdl-scancode-lockingcapslock* (lambda () (format #t "user pressed sdl-scancode-lockingcapslock key ~%")))
+(register-keyboard-fn *sdl-scancode-lockingnumlock* (lambda () (format #t "user pressed sdl-scancode-lockingnumlock key ~%")))
+(register-keyboard-fn *sdl-scancode-lockingscrolllock* (lambda () (format #t "user pressed sdl-scancode-lockingscrolllock key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-comma* (lambda () (format #t "user pressed sdl-scancode-kp-comma key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-equalsas400* (lambda () (format #t "user pressed sdl-scancode-kp-equalsas400 key ~%")))
+(register-keyboard-fn *sdl-scancode-international1* (lambda () (format #t "user pressed sdl-scancode-international1 key ~%")))
+(register-keyboard-fn *sdl-scancode-international2* (lambda () (format #t "user pressed sdl-scancode-international2 key ~%")))
+(register-keyboard-fn *sdl-scancode-international3* (lambda () (format #t "user pressed sdl-scancode-international3 key ~%")))
+(register-keyboard-fn *sdl-scancode-international4* (lambda () (format #t "user pressed sdl-scancode-international4 key ~%")))
+(register-keyboard-fn *sdl-scancode-international5* (lambda () (format #t "user pressed sdl-scancode-international5 key ~%")))
+(register-keyboard-fn *sdl-scancode-international6* (lambda () (format #t "user pressed sdl-scancode-international6 key ~%")))
+(register-keyboard-fn *sdl-scancode-international7* (lambda () (format #t "user pressed sdl-scancode-international7 key ~%")))
+(register-keyboard-fn *sdl-scancode-international8* (lambda () (format #t "user pressed sdl-scancode-international8 key ~%")))
+(register-keyboard-fn *sdl-scancode-international9* (lambda () (format #t "user pressed sdl-scancode-international9 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang1* (lambda () (format #t "user pressed sdl-scancode-lang1 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang2* (lambda () (format #t "user pressed sdl-scancode-lang2 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang3* (lambda () (format #t "user pressed sdl-scancode-lang3 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang4* (lambda () (format #t "user pressed sdl-scancode-lang4 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang5* (lambda () (format #t "user pressed sdl-scancode-lang5 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang6* (lambda () (format #t "user pressed sdl-scancode-lang6 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang7* (lambda () (format #t "user pressed sdl-scancode-lang7 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang8* (lambda () (format #t "user pressed sdl-scancode-lang8 key ~%")))
+(register-keyboard-fn *sdl-scancode-lang9* (lambda () (format #t "user pressed sdl-scancode-lang9 key ~%")))
+(register-keyboard-fn *sdl-scancode-alterase* (lambda () (format #t "user pressed sdl-scancode-alterase key ~%")))
+(register-keyboard-fn *sdl-scancode-sysreq* (lambda () (format #t "user pressed sdl-scancode-sysreq key ~%")))
+(register-keyboard-fn *sdl-scancode-cancel* (lambda () (format #t "user pressed sdl-scancode-cancel key ~%")))
+(register-keyboard-fn *sdl-scancode-clear* (lambda () (format #t "user pressed sdl-scancode-clear key ~%")))
+(register-keyboard-fn *sdl-scancode-prior* (lambda () (format #t "user pressed sdl-scancode-prior key ~%")))
+(register-keyboard-fn *sdl-scancode-return2* (lambda () (format #t "user pressed sdl-scancode-return2 key ~%")))
+(register-keyboard-fn *sdl-scancode-separator* (lambda () (format #t "user pressed sdl-scancode-separator key ~%")))
+(register-keyboard-fn *sdl-scancode-out* (lambda () (format #t "user pressed sdl-scancode-out key ~%")))
+(register-keyboard-fn *sdl-scancode-oper* (lambda () (format #t "user pressed sdl-scancode-oper key ~%")))
+(register-keyboard-fn *sdl-scancode-clearagain* (lambda () (format #t "user pressed sdl-scancode-clearagain key ~%")))
+(register-keyboard-fn *sdl-scancode-crsel* (lambda () (format #t "user pressed sdl-scancode-crsel key ~%")))
+(register-keyboard-fn *sdl-scancode-exsel* (lambda () (format #t "user pressed sdl-scancode-exsel key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-00* (lambda () (format #t "user pressed sdl-scancode-kp-00 key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-000* (lambda () (format #t "user pressed sdl-scancode-kp-000 key ~%")))
+(register-keyboard-fn *sdl-scancode-thousandsseparator* (lambda () (format #t "user pressed sdl-scancode-thousandsseparator key ~%")))
+(register-keyboard-fn *sdl-scancode-decimalseparator* (lambda () (format #t "user pressed sdl-scancode-decimalseparator key ~%")))
+(register-keyboard-fn *sdl-scancode-currencyunit* (lambda () (format #t "user pressed sdl-scancode-currencyunit key ~%")))
+(register-keyboard-fn *sdl-scancode-currencysubunit* (lambda () (format #t "user pressed sdl-scancode-currencysubunit key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-leftparen* (lambda () (format #t "user pressed sdl-scancode-kp-leftparen key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-rightparen* (lambda () (format #t "user pressed sdl-scancode-kp-rightparen key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-leftbrace* (lambda () (format #t "user pressed sdl-scancode-kp-leftbrace key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-rightbrace* (lambda () (format #t "user pressed sdl-scancode-kp-rightbrace key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-tab* (lambda () (format #t "user pressed sdl-scancode-kp-tab key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-backspace* (lambda () (format #t "user pressed sdl-scancode-kp-backspace key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-a* (lambda () (format #t "user pressed sdl-scancode-kp-a key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-b* (lambda () (format #t "user pressed sdl-scancode-kp-b key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-c* (lambda () (format #t "user pressed sdl-scancode-kp-c key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-d* (lambda () (format #t "user pressed sdl-scancode-kp-d key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-e* (lambda () (format #t "user pressed sdl-scancode-kp-e key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-f* (lambda () (format #t "user pressed sdl-scancode-kp-f key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-xor* (lambda () (format #t "user pressed sdl-scancode-kp-xor key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-power* (lambda () (format #t "user pressed sdl-scancode-kp-power key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-percent* (lambda () (format #t "user pressed sdl-scancode-kp-percent key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-less* (lambda () (format #t "user pressed sdl-scancode-kp-less key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-greater* (lambda () (format #t "user pressed sdl-scancode-kp-greater key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-ampersand* (lambda () (format #t "user pressed sdl-scancode-kp-ampersand key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-dblampersand* (lambda () (format #t "user pressed sdl-scancode-kp-dblampersand key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-verticalbar* (lambda () (format #t "user pressed sdl-scancode-kp-verticalbar key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-dblverticalbar* (lambda () (format #t "user pressed sdl-scancode-kp-dblverticalbar key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-colon* (lambda () (format #t "user pressed sdl-scancode-kp-colon key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-hash* (lambda () (format #t "user pressed sdl-scancode-kp-hash key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-space* (lambda () (format #t "user pressed sdl-scancode-kp-space key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-at* (lambda () (format #t "user pressed sdl-scancode-kp-at key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-exclam* (lambda () (format #t "user pressed sdl-scancode-kp-exclam key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memstore* (lambda () (format #t "user pressed sdl-scancode-kp-memstore key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memrecall* (lambda () (format #t "user pressed sdl-scancode-kp-memrecall key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memclear* (lambda () (format #t "user pressed sdl-scancode-kp-memclear key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memadd* (lambda () (format #t "user pressed sdl-scancode-kp-memadd key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memsubtract* (lambda () (format #t "user pressed sdl-scancode-kp-memsubtract key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memmultiply* (lambda () (format #t "user pressed sdl-scancode-kp-memmultiply key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-memdivide* (lambda () (format #t "user pressed sdl-scancode-kp-memdivide key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-plusminus* (lambda () (format #t "user pressed sdl-scancode-kp-plusminus key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-clear* (lambda () (format #t "user pressed sdl-scancode-kp-clear key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-clearentry* (lambda () (format #t "user pressed sdl-scancode-kp-clearentry key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-binary* (lambda () (format #t "user pressed sdl-scancode-kp-binary key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-octal* (lambda () (format #t "user pressed sdl-scancode-kp-octal key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-decimal* (lambda () (format #t "user pressed sdl-scancode-kp-decimal key ~%")))
+(register-keyboard-fn *sdl-scancode-kp-hexadecimal* (lambda () (format #t "user pressed sdl-scancode-kp-hexadecimal key ~%")))
+(register-keyboard-fn *sdl-scancode-lctrl* (lambda () (format #t "user pressed sdl-scancode-lctrl key ~%")))
+(register-keyboard-fn *sdl-scancode-lshift* (lambda () (format #t "user pressed sdl-scancode-lshift key ~%")))
+(register-keyboard-fn *sdl-scancode-lalt* (lambda () (format #t "user pressed sdl-scancode-lalt key ~%")))
+(register-keyboard-fn *sdl-scancode-lgui* (lambda () (format #t "user pressed sdl-scancode-lgui key ~%")))
+(register-keyboard-fn *sdl-scancode-rctrl* (lambda () (format #t "user pressed sdl-scancode-rctrl key ~%")))
+(register-keyboard-fn *sdl-scancode-rshift* (lambda () (format #t "user pressed sdl-scancode-rshift key ~%")))
+(register-keyboard-fn *sdl-scancode-ralt* (lambda () (format #t "user pressed sdl-scancode-ralt key ~%")))
+(register-keyboard-fn *sdl-scancode-rgui* (lambda () (format #t "user pressed sdl-scancode-rgui key ~%")))
+(register-keyboard-fn *sdl-scancode-mode* (lambda () (format #t "user pressed sdl-scancode-mode key ~%")))
+(register-keyboard-fn *sdl-scancode-audionext* (lambda () (format #t "user pressed sdl-scancode-audionext key ~%")))
+(register-keyboard-fn *sdl-scancode-audioprev* (lambda () (format #t "user pressed sdl-scancode-audioprev key ~%")))
+(register-keyboard-fn *sdl-scancode-audiostop* (lambda () (format #t "user pressed sdl-scancode-audiostop key ~%")))
+(register-keyboard-fn *sdl-scancode-audioplay* (lambda () (format #t "user pressed sdl-scancode-audioplay key ~%")))
+(register-keyboard-fn *sdl-scancode-audiomute* (lambda () (format #t "user pressed sdl-scancode-audiomute key ~%")))
+(register-keyboard-fn *sdl-scancode-mediaselect* (lambda () (format #t "user pressed sdl-scancode-mediaselect key ~%")))
+(register-keyboard-fn *sdl-scancode-www* (lambda () (format #t "user pressed sdl-scancode-www key ~%")))
+(register-keyboard-fn *sdl-scancode-mail* (lambda () (format #t "user pressed sdl-scancode-mail key ~%")))
+(register-keyboard-fn *sdl-scancode-calculator* (lambda () (format #t "user pressed sdl-scancode-calculator key ~%")))
+(register-keyboard-fn *sdl-scancode-computer* (lambda () (format #t "user pressed sdl-scancode-computer key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-search* (lambda () (format #t "user pressed sdl-scancode-ac-search key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-home* (lambda () (format #t "user pressed sdl-scancode-ac-home key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-back* (lambda () (format #t "user pressed sdl-scancode-ac-back key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-forward* (lambda () (format #t "user pressed sdl-scancode-ac-forward key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-stop* (lambda () (format #t "user pressed sdl-scancode-ac-stop key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-refresh* (lambda () (format #t "user pressed sdl-scancode-ac-refresh key ~%")))
+(register-keyboard-fn *sdl-scancode-ac-bookmarks* (lambda () (format #t "user pressed sdl-scancode-ac-bookmarks key ~%")))
+(register-keyboard-fn *sdl-scancode-brightnessdown* (lambda () (format #t "user pressed sdl-scancode-brightnessdown key ~%")))
+(register-keyboard-fn *sdl-scancode-brightnessup* (lambda () (format #t "user pressed sdl-scancode-brightnessup key ~%")))
+(register-keyboard-fn *sdl-scancode-displayswitch* (lambda () (format #t "user pressed sdl-scancode-displayswitch key ~%")))
+(register-keyboard-fn *sdl-scancode-kbdillumtoggle* (lambda () (format #t "user pressed sdl-scancode-kbdillumtoggle key ~%")))
+(register-keyboard-fn *sdl-scancode-kbdillumdown* (lambda () (format #t "user pressed sdl-scancode-kbdillumdown key ~%")))
+(register-keyboard-fn *sdl-scancode-kbdillumup* (lambda () (format #t "user pressed sdl-scancode-kbdillumup key ~%")))
+(register-keyboard-fn *sdl-scancode-eject* (lambda () (format #t "user pressed sdl-scancode-eject key ~%")))
+(register-keyboard-fn *sdl-scancode-sleep* (lambda () (format #t "user pressed sdl-scancode-sleep key ~%")))
+(register-keyboard-fn *sdl-scancode-app1* (lambda () (format #t "user pressed sdl-scancode-app1 key ~%")))
+(register-keyboard-fn *sdl-scancode-app2* (lambda () (format #t "user pressed sdl-scancode-app2 key ~%")))
+(register-keyboard-fn *sdl-scancode-audiorewind* (lambda () (format #t "user pressed sdl-scancode-audiorewind key ~%")))
+(register-keyboard-fn *sdl-scancode-audiofastforward* (lambda () (format #t "user pressed sdl-scancode-audiofastforward key ~%")))
+(register-keyboard-fn *sdl-scancode-softleft* (lambda () (format #t "user pressed sdl-scancode-softleft key ~%")))
+(register-keyboard-fn *sdl-scancode-softright* (lambda () (format #t "user pressed sdl-scancode-softright key ~%")))
+(register-keyboard-fn *sdl-scancode-call* (lambda () (format #t "user pressed sdl-scancode-call key ~%")))
+(register-keyboard-fn *sdl-scancode-endcall* (lambda () (format #t "user pressed sdl-scancode-endcall key ~%")))
+(register-keyboard-fn *sdl-num-scancodes* (lambda () (format #t "user pressed sdl-num-scancodes key ~%")))
+
+(define (make-sdl-rect x y w h)
+  (let* ((size 16)
+	 (bv (make-bytevector size 0)))
+    (bytevector-s32-native-set! bv 0 x);; x
+    (bytevector-s32-native-set! bv 4 y);; y
+    (bytevector-s32-native-set! bv 8 w);; width
+    (bytevector-s32-native-set! bv 12 h);; height
+    bv))
+
+(define (make-sdl-rect-pointer x y w h)
+  (bytevector->pointer (make-sdl-rect x y w h)))
+
+
+(define (make-sdl-color red green blue)  (logior (ash red 16) (ash green 8) blue))
+
+(define *mouse-x* 0)
+(define *mouse-y* 0)
+
+;; 640 x 480
+(define *screen-width* 640)
+(define *screen-height* 480)
+
+;; determine how big the window actually is ?
+;; have a number of bouncing blocks
+(define *blocks-count* 100)
+(define *blocks* (make-vector *blocks-count* #f))
+
+;; (define (size-int) 4) 
+
+;; initialise blocks
+;; using bytevector during loading with shared libraries causes seg fault
+(define (initialize-blocks)
+  (letrec ((foo (lambda (i)
+		  (when (< i *blocks-count*)
+		    (let ((bv (make-vector 4)))
+		      (vector-set! bv 0 (random 640))
+		      (vector-set! bv 1 (random 480))
+		      (vector-set! bv 2 (/ (random 10) 100))
+		      (vector-set! bv 3 (/ (random 10) 100))
+		      ;;(bytevector-s32-native-set! bv 16 (random 10))
+		      ;;(bytevector-s32-native-set! bv 20 (random 10))u
+		      (vector-set! *blocks* i bv))
+		    (foo (+ i 1))))))
+    (foo 0)))
+
+
+
+;; update all blocks
+(define (update-blocks)
+  (letrec ((foo (lambda (i)
+		  (when (< i *blocks-count*)
+		    (let ((bv (vector-ref *blocks* i)))
+		      (let ((x (vector-ref bv 0))
+			    (y (vector-ref bv 1))
+			    (vx (vector-ref bv 2))
+			    (vy (vector-ref bv 3)))
+			(set! x (+ x vx))
+			(set! y (+ y vy))
+			(when (> x *screen-width*)
+			  (set! x *screen-width*)
+			  (set! vx (- vx)))
+			(when (> y *screen-height*)
+			  (set! y *screen-height*)
+			  (set! vy (- vy)))
+			(when (< x 0)
+			  (set! x 0)
+			  (set! vx (- vx)))
+			(when (< y 0)
+			  (set! y 0)
+			  (set! vy (- vy)))
+			(vector-set! bv 0 x)
+			(vector-set! bv 1 y)
+			(vector-set! bv 2 vx)
+			(vector-set! bv 3 vy)))
+		    (foo (+ i 1))))))
+  (foo 0)))
+  
+(define (show-blocks render)
+  (letrec ((foo (lambda (i)
+		  (when (< i *blocks-count*)
+		    (let ((bv (vector-ref *blocks* i)))
+		      (let ((x (vector-ref bv 0))
+			    (y (vector-ref bv 1))
+			    (vx (vector-ref bv 2))
+			    (vy (vector-ref bv 3)))           ;;FI X  ME
+			(let ((bvi (make-bytevector (* 4 (size-int)) 0)))
+			  (bytevector-s32-native-set! bvi 0 (floor x)) ;; x
+			  (bytevector-s32-native-set! bvi 4 (floor y)) ;; y
+			  (bytevector-s32-native-set! bvi 8 20) ;; width 20 ?
+			  (bytevector-s32-native-set! bvi 12 20) ;; height 20 ??			  
+			  (sdl-render-fill-rect render (bytevector->pointer bvi)))))
+		    (foo (+ i 1))))))
+    (foo 0)))
+  
+;; the file concerned
+;works in chicken-csi and Racket
+(define (readlines filename)
+  (call-with-input-file filename
+    (lambda (p)
+      (let loop ((line (read-line p))
+                 (result '()))
+        (if (eof-object? line)
+            (reverse result)
+            (loop (read-line p) (cons line result)))))))
+
+(define (vectorise xs)
+  (list->vector xs))
+
+;;(getcwd)
+;;(readlines "unix-less.scm")
+;;(unix-less "unix-less.scm")
+;; (make-value 1 'int)
+;; (apropos "int")
+
+(define (newline-concat buffer buffer-y buffer-x lines-per-screen ct)
+      (let ((output "")
+	    (buffer-size (vector-length buffer)))
+	(letrec ((foo (lambda (i) 
+			(let ((n (+ i buffer-y)))
+			  (cond
+			   ((> i lines-per-screen) #f)
+			   ((>= n buffer-size) #f) 
+			   ((< n 0) #f) ;; absurd index check i>=0 < (vector-length buffer)
+			   ((= i 0) (set! output
+					  (string-append (format #f "~a : " (+ 1 n))
+							 (vector-ref buffer n)))
+			    (foo (+ i 1)))
+			   (#t (set! output (string-append output "\n"
+							   (format #f "~a : " (+ n 1))
+							   (vector-ref buffer n)))
+			       (foo (+ i 1))))))))
+	  (foo 0)
+	  output)))
+    
+
+  
+ (define (unix-less filename)  
+  (let ((buffer (vectorise (readlines "unix-less.scm")))
+	(buffer-x 0)
+	(buffer-y 0)
+	(font-size 12)
+	(lines-per-screen 44) ;; how many lines per screen do we have ??
+	(chars-per-line 80) ;; wrapping 80 chars in 
+	(screen-width 1024)
+	(screen-height 768))
+      
+
+    ;;(pretty-print buffer)
+
+    (define event-counter 0)
+    
+    (define mTexture %null-pointer)
+    (define mTexture-width 0)
+    (define mTexture-height 0)
+	   
+    (sdl-init *sdl-init-video*)
+    (define image-init-result (image-init))
+    (format #t "image-init-result ~a~%" image-init-result)
+
+    (define ttf-init-result (ttf-init))
+    (format #t "ttf-init-result ~a~%"  ttf-init-result)
+    (cond
+     ((zero? ttf-init-result) 'ok)
+     (#t (format #t "ttf-init error~%")))
+    
+    
+    (define window (create-window "hello world" screen-width screen-height))
+    (define render (create-renderer window))    
+    (cond
+     ((equal? render %null-pointer)   (format #t "create render failed !~%"))
+     (#t (format #t "created render success !~%")))
+
+    (define texture (load-texture "zxspectrum.png" render))
+    (format #t "texture created ~a~%" texture)
+    
+    (define surface (sdl-get-window-surface window))
+
+    (format #t "surface pointer ptr ~a~%" surface)
+    ;;(format #t "ptr->format ~a~%" (pixelformat (pointer-address surface)))
+    (output-check)
+    ;; 
+    (define hello-bitmap %null-pointer)
+    ;;(define loaded-surface (sdl-load-bmp "hello.bmp"))
+
+    ;; image-load only loads jpg png web tif 
+    (define loaded-surface (image-load "zxspectrum.png"))
+    (format #t "surface pointer ~a~%" surface)
+    (format #t "surface address ~x~%" (pointer-address surface));; hex value
+    (format #t "surface->format address ~x~%" (+ 8 (pointer-address surface)));; hex value
+    (format #t "C pixelformat : surface->format address ~a~%" (pixelformat surface))
+
+    ;; display actual bytes that make up surface->format a (SDL_PixelFormat *ptr)
+    (pixelformat2 surface)
+    
+    ;; display bytes we think we see
+    (let* ((length 8)
+	   (offset 8)
+	   (bv (pointer->bytevector surface length offset)))
+      (format #t "scheme byte 0 : ~a ~%" (bytevector-u8-ref bv 0))
+      (format #t "scheme byte 1 : ~a ~%" (bytevector-u8-ref bv 1))
+      (format #t "scheme byte 2 : ~a ~%" (bytevector-u8-ref bv 2))
+      (format #t "scheme byte 3 : ~a ~%" (bytevector-u8-ref bv 3))
+      (format #t "scheme byte 4 : ~a ~%" (bytevector-u8-ref bv 4))
+      (format #t "scheme byte 5 : ~a ~%" (bytevector-u8-ref bv 5))
+      (format #t "scheme byte 6 : ~a ~%" (bytevector-u8-ref bv 6))
+      (format #t "scheme byte 7 : ~a ~%" (bytevector-u8-ref bv 7)))
+     
+    ;;(define optimized-surface %null-pointer)    
+    (define optimized-surface
+      (let ((screen-format (pixelformat surface)))
+	(sdl-convert-surface loaded-surface screen-format 0)))
+    
+    (cond
+     ((equal? %null-pointer optimized-surface)
+      (set! hello-bitmap loaded-surface)
+      (format #t "unable to optimize image~%")
+      ;;(error "unable to optimize image ~a" (sdl-get-error))
+      ) ;; c-string -> scheme string required     
+     (#t (set! hello-bitmap optimized-surface)
+	 (format #t "created optimized surface ~a~%" optimized-surface)
+	 (sdl-free-surface loaded-surface)))
+
+    (initialize-blocks)
+
+
+    ;; your ttf-file goes here + point size
+    ;; c char* not a guile string
+    (define font %null-pointer)
+    (let ((the-font "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"))
+      (set! font (ttf-open-font (string->pointer the-font) font-size))
+      (cond
+       ((equal? font %null-pointer)
+	(format #t "ttf font error cannot open font {~a}~%" the-font))
+       (#t (format #t "ttf ~a obtained ok~%" the-font))))
+    	      
+    
+    (define quit #f)
+
+    (sdl-show-cursor 0) ;; 0=false 1=truthy
+    ;; poll
+    ;; create a C union struct the size of SDL_Event
+    ;; and then manually populate struct obviating advantages of
+    ;; make SDL_Event which is 36 bytes in size
+    (define event (let ((size 36)(fill 0))
+		    (make-bytevector size fill)))
+    (define first-run #t)
+    
+    (while (not quit)
+	   ;; poll for an event
+	   (while (not (= 0 (sdl-poll-event (bytevector->pointer event))))
+		  ;; if was new event then {event} itself will have the contents of it
+		  ;; (endianness big)
+	          ;; (endianness little)
+	          (inc! event-counter)
+		  (let ((type (bytevector-u32-native-ref event 0)))
+		    (cond
+		     ((= type *sdl-quit*) ;; ======== quit event ==================
+		      (format #t "the user quit the application !~%")
+		      ;; if we quit - set quit flag to true and exit
+		      (let ((type (bytevector-u32-native-ref event 0))
+			    (timestamp (bytevector-u32-native-ref event 4)))
+			(set! quit #t)))
+		     ((= type *sdl-window-event*) ;; ======== window event ==================
+		      (let ((type (bytevector-u32-native-ref event 0))
+			    (timestamp (bytevector-u32-native-ref event 4))
+			    (windowid (bytevector-u32-native-ref event 8))
+			    (event (bytevector-u8-ref event 12))
+			    (padding1 (bytevector-u8-ref event 13))
+			    (padding2 (bytevector-u8-ref event 14))
+			    (padding3 (bytevector-u8-ref event 15 ))
+			    (data1 (bytevector-s32-native-ref event 16 ))
+			    (data2 (bytevector-s32-native-ref event 20 )))
+			;; what is the original window id ??
+			;;(format #t "window event ~a ~%" event)
+			;;(case event			
+			(fcase event
+			 ((*sdl-window-event-none*) (format #t "window event ~a none~%" event-counter))
+			 ((*sdl-window-event-shown*) (format #t "window event ~a shown ~%" event-counter))
+			 ((*sdl-window-event-hidden*) (format #t "window event ~a hidden ~%" event-counter))
+			 ((*sdl-window-event-moved*) (format #t "window event ~a moved ~a ~a~%" event-counter data1 data2))
+			 ((*sdl-window-event-exposed*) (format #t "window event ~a exposed~%" event-counter ))
+			 ((*sdl-window-event-resized*) (format #t "window event ~a resized~%" event-counter ))
+			 ((*sdl-window-event-changed*) (format #t "window event ~a changed~%" event-counter ))
+			 ((*sdl-window-event-minimized*) (format #t "window event ~a minimized~%" event-counter ))
+			 ((*sdl-window-event-maximized*) (format #t "window event ~a maximized~%" event-counter ))
+			 ((*sdl-window-event-restored*) (format #t "window event ~a restored~%" event-counter ))
+			 ((*sdl-window-event-enter*) (format #t "window event ~a enter~%" event-counter ))
+			 ((*sdl-window-event-leave*) (format #t "window event ~a leave~%" event-counter ))
+			 ((*sdl-window-event-focus-gained*) (format #t "window event ~a focus gained~% " event-counter ))
+			 ((*sdl-window-event-focus-lost*) (format #t "window event ~a focus lost~%" event-counter ))
+			 ((*sdl-window-event-close*) (format #t "window event ~a close~%" event-counter ))
+			 ((*sdl-window-event-take-focus*) (format #t "window event ~a take focus~%" event-counter ))
+			 ((*sdl-window-event-hit-test*) (format #t "window event ~a hit test~%" event-counter ))
+			 ((*sdl-window-event-icc-prof-changed*) (format #t "window event ~a icc prof changed ~%" event-counter ))
+			 ((*sdl-window-event-display-changed*) (format #t "window event ~a display changed~%" event-counter ))
+			 (else (format #t "window event ~a something else happended ~%" event-counter)))
+			#t)) ;; ==== end of window event ===
+
+		     ((= type *sdl-keydown*) ;; ======== keydown event ==================
+		      (let ((type (bytevector-u32-native-ref event 0))
+			    (timestamp (bytevector-u32-native-ref event 4))
+			    (windowid (bytevector-u32-native-ref event 8))
+			    (state (bytevector-u8-ref event 12))
+			    (repeat (bytevector-u8-ref event 13))
+			    (padding2 (bytevector-u8-ref event 14))
+			    (padding3 (bytevector-u8-ref event 15 ))
+			    (keysym-scancode (bytevector-u32-native-ref event 16 ))
+			    (keysym-sym (bytevector-s32-native-ref event 20 ))
+			    (keysym-mod (bytevector-u16-native-ref event 24 )))
+
+			;; do something first time this is run
+			(when first-run
+			  ;; allows us to escape the gui event loop easily
+			  (register-keyboard-fn *sdl-scancode-escape*
+						(lambda () (set! quit #t)(format #t "user quit ! ~%")))
+			  ;; simulate up / down document
+
+			  (register-keyboard-fn *sdl-scancode-home*
+						(lambda ()
+						  (set! buffer-y 0)))
+
+			  (register-keyboard-fn *sdl-scancode-end*
+						(lambda ()
+						  (set! buffer-y (- (vector-length buffer) lines-per-screen 1))
+						  (when (<= buffer-y 0)
+						    (set! buffer-y 0))))
+			  
+			  
+			  (register-keyboard-fn *sdl-scancode-pagedown*
+						(lambda ()
+						  (inc! buffer-y lines-per-screen)
+						  (format #t "buffer-y ~a~%" buffer-y)
+						  (when (>= buffer-y (- (vector-length buffer) lines-per-screen 1))
+						    (format #t "decreased buffer-y ~a~%" buffer-y)
+						    (set! buffer-y (- (vector-length buffer) lines-per-screen 1))
+						    (when (<= buffer-y 0)
+						      (set! buffer-y 0)))))
+
+			  
+			  (register-keyboard-fn *sdl-scancode-down*
+						(lambda ()
+						  (inc! buffer-y)
+						  (format #t "buffer-y ~a~%" buffer-y)
+						  (when (>= buffer-y (- (vector-length buffer) lines-per-screen 1))
+						    (format #t "decreased buffer-y ~a~%" buffer-y)
+						    (set! buffer-y (- (vector-length buffer) lines-per-screen 1)))))
+			  
+			  (register-keyboard-fn *sdl-scancode-pageup*
+						(lambda () (dec! buffer-y lines-per-screen)
+							(when (< buffer-y 0)
+							  (set! buffer-y 0))
+							(format #t "buffer-y ~a~%" buffer-y)
+							))
+			  (register-keyboard-fn *sdl-scancode-up*
+						(lambda () (dec! buffer-y)
+							(when (< buffer-y 0)
+							  (set! buffer-y 0))
+							;;(format #t "buffer-y ~a~%" buffer-y)
+							))
+			  (register-keyboard-fn *sdl-scancode-right*
+						(lambda () (inc! buffer-x)))
+			  (register-keyboard-fn *sdl-scancode-left*
+						(lambda () (dec! buffer-x)
+							(when (< buffer-x 0)
+							  (set! buffer-x 0))))
+			  (set! first-run #f))
+			
+			;; call relevant key handler
+			(call-keyboard-fn keysym-scancode)
+			#|
+			(cond
+			 ((= keysym-scancode *sdl-scancode-a*) (format #t "user pressed A key !~%"))
+			 ((= keysym-scancode *sdl-scancode-b*) (format #t "user pressed B key !~%"))
+			 ((= keysym-scancode *sdl-scancode-c*) (format #t "user pressed C key !~%"))
+			 ((= keysym-scancode *sdl-scancode-d*) (format #t "user pressed D key !~%"))
+			 ((= keysym-scancode *sdl-scancode-e*) (format #t "user pressed E key !~%"))
+			(#t (format #t "user pressed key (scancode ~a) !~%" keysym-scancode)))
+			|#
+			
+			))
+		     ((= type *sdl-keyup*) ;; ======== keyup event ==================
+		      ;;(format #t "the user released a key !~%")
+		      #f
+		      )
+		     ((= type *sdl-mousemotion*) ;; ======== mouse motion event ==================
+		      (let ((type (bytevector-u32-native-ref event 0 ))
+			    (timestamp (bytevector-u32-native-ref event 4 ))
+			    (windowid (bytevector-u32-native-ref event 8 ))
+			    (state (bytevector-u32-native-ref event 12 ))
+			    (x (bytevector-s32-native-ref event 20 ))
+			    (y (bytevector-s32-native-ref event 24 ))
+			    (xrel (bytevector-s32-native-ref event 28 ))
+			    (yrel (bytevector-s32-native-ref event 32 )))
+			;;(format #t "mouse move (~a ~a ~a ~a " type timestamp windowid state)
+			;;(format #t " (pos:~a ~a) (rel:~a ~a) ~%" x y xrel yrel)
+			(set! *mouse-x* x)
+			(set! *mouse-y* y)))
+		     (#t #f))))
+
+	   ;; blue color
+	   ;;(sdl-set-render-draw-color render #x00 #x00 #xFF #xFF)
+
+	   ;; white
+	   (sdl-set-render-draw-color render #xFF #xFF #xFF #xFF)
+	   
+	   ;; clear screen 
+	   (sdl-render-clear render)
+
+	   ;; display spectrum texture image
+	   ;;(sdl-render-copy render texture %null-pointer %null-pointer)
+
+	   #|
+	   ;; red line
+	   (sdl-set-render-draw-color render #xFF #x00 #x00 #xFF)
+
+	   ;; draw-rect
+	   (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	     (bytevector-s32-native-set! bv 0 *mouse-x*)
+	     (bytevector-s32-native-set! bv 4 *mouse-y*)
+	     (bytevector-s32-native-set! bv 8 20)
+	     (bytevector-s32-native-set! bv 12 20)
+	     ;;(show-rect (bytevector->pointer bv))
+	   
+	     ;; dereference-pointer
+	     ;; file:///usr/share/doc/guile-3.0.10/ref/Void-Pointers-and-Byte-Access.html
+	     
+	     ;;(format #t "bytevector pointer ~a ~%" (bytevector->pointer bv) 
+	     (sdl-render-draw-rect render (bytevector->pointer bv)))
+	   |#
+	     
+
+	   #|
+	   ;; red
+	   (sdl-set-render-draw-color render #xFF #x00 #x00 #xFF)	   
+	   (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	     (bytevector-s32-native-set! bv 0 100)
+	     (bytevector-s32-native-set! bv 4 100)
+	     (bytevector-s32-native-set! bv 8 100)
+	     (bytevector-s32-native-set! bv 12 100)
+	     (sdl-render-fill-rect render (bytevector->pointer bv)))
+
+	   ;; green
+	   (sdl-set-render-draw-color render #x00 #xFF #x00 #xFF)	   	   
+	   (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	     (bytevector-s32-native-set! bv 0 300)
+	     (bytevector-s32-native-set! bv 4 100)
+	     (bytevector-s32-native-set! bv 8 100)
+	     (bytevector-s32-native-set! bv 12 100)
+	     (sdl-render-fill-rect render (bytevector->pointer bv)))
+
+	   ;; blue
+	   (sdl-set-render-draw-color render #x00 #x00 #xFF #xFF)	   	   	   
+	   (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	     (bytevector-s32-native-set! bv 0 500)
+	     (bytevector-s32-native-set! bv 4 100)
+	     (bytevector-s32-native-set! bv 8 100)
+	     (bytevector-s32-native-set! bv 12 100)
+	     (sdl-render-fill-rect render (bytevector->pointer bv)))
+
+	   ;; line from top left to mouse position
+	   (sdl-set-render-draw-color render #xFF #x00 #x00 #xFF)	   	   	   
+	   (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	     (bytevector-s32-native-set! bv 0 *mouse-x*)
+	     (bytevector-s32-native-set! bv 4 *mouse-y*)
+	     (bytevector-s32-native-set! bv 8 20)
+	     (bytevector-s32-native-set! bv 12 20)
+	     (sdl-render-fill-rect render (bytevector->pointer bv)))
+	   (sdl-render-draw-line render 0 0 *mouse-x* *mouse-y*)
+	      
+	   |#
+
+	   ;; draw some random points
+	   (sdl-set-render-draw-color render #x33 #x44 #x55 #xFF)	   
+	   ;;(sdl-render-draw-point render 150 150)
+
+	   ;; ;; update the blocks
+	   (update-blocks)
+	   
+	   ;; ;; show the blocks
+	   (show-blocks render)	   
+	   
+
+	   ;; get lines that make up the buffer and append them together with a newline at end of each line
+	   ;; 
+	   (let ((position-x 64)
+		 (position-y 64)
+		 (screen-text (newline-concat buffer buffer-y buffer-x lines-per-screen 0)))
+	   ;; some writing
+	   ;; SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+	   ;; should dfree old texture if still around
+	   (when (not (equal? mTexture %null-pointer))
+	     (sdl-destroy-texture mTexture))	   
+	   (set! mTexture %null-pointer)
+	   (set! mTexture-width 0)
+	   (set! mTexture-height 0)
+	   ;; r g b a = each uint8  (ie 2 hex characters making total 8 hex chars alpha FF)
+	   ;; memory leak on string->pointer ?
+	   ;; instead of 
+	   (let* ((textColor #x000000FF) ;; black
+		  (textSurface (ttf-render-utf8-blended-wrapped
+				font
+				;;(string->pointer "this is line1\nthis is line2 \nthis is line3.")
+				(string->pointer screen-text)
+				textColor
+				(* 20 chars-per-line))))
+	     (cond
+	      ((equal? textSurface %null-pointer)
+	       ;;(format #t "failed to render text ~%")
+	       #f
+	       )
+	      (#t (set! mTexture (sdl-create-texture-from-surface render textSurface))
+		  (set! mTexture-width (%sdl-surface-width textSurface))
+		  (set! mTexture-height (%sdl-surface-height textSurface))
+		  (sdl-free-surface textSurface))))
+
+	   (when (not (equal? mTexture %null-pointer))
+	     (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	       (bytevector-s32-native-set! bv 0 position-x)
+	       (bytevector-s32-native-set! bv 4 position-y)
+	       (bytevector-s32-native-set! bv 8 mTexture-width)
+	       (bytevector-s32-native-set! bv 12 mTexture-height)	       
+	       (sdl-render-copy render mTexture %null-pointer (bytevector->pointer bv))))
+
+	   (sdl-destroy-texture mTexture)
+	   (set! mTexture %null-pointer)
+	   );; a single texture dump 
+	   
+	   #|
+	   ;; how many lines of text are we computing ?
+	   (let loop ((n 0))
+	     (cond
+	      ((> n lines-per-screen) #f)
+	      (#t 
+
+	       (let ((buffer-string (vector-ref buffer (+ n buffer-y)))
+		     (position-x 0)
+		     (position-y (* n font-size)))
+	       
+	   ;; some writing
+	   ;; SDL_Surface* textSurface = TTF_RenderText_Solid( gFont, textureText.c_str(), textColor );
+	   ;; should dfree old texture if still around
+	   (when (not (equal? mTexture %null-pointer))
+	     (sdl-destroy-texture mTexture))	   
+	   (set! mTexture %null-pointer)
+	   (set! mTexture-width 0)
+	   (set! mTexture-height 0)
+	   ;; r g b a = each uint8  (ie 2 hex characters making total 8 hex chars alpha FF)
+	   ;; memory leak on string->pointer ?
+	   (let* ((textColor #xFF00FFFF) 
+		  (textSurface (ttf-render-text-solid font
+						      (string->pointer buffer-string)
+						      textColor)))
+	     (cond
+	      ((equal? textSurface %null-pointer)
+	       ;;(format #t "failed to render text ~%")
+	       #f
+	       )
+	      (#t (set! mTexture (sdl-create-texture-from-surface render textSurface))
+		  (set! mTexture-width (%sdl-surface-width textSurface))
+		  (set! mTexture-height (%sdl-surface-height textSurface))
+		  (sdl-free-surface textSurface))))
+
+	   (when (not (equal? mTexture %null-pointer))
+	     (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+	       (bytevector-s32-native-set! bv 0 position-x)
+	       (bytevector-s32-native-set! bv 4 position-y)
+	       (bytevector-s32-native-set! bv 8 mTexture-width)
+	       (bytevector-s32-native-set! bv 12 mTexture-height)	       
+	       (sdl-render-copy render mTexture %null-pointer (bytevector->pointer bv))))
+
+	   (sdl-destroy-texture mTexture)
+	   (set! mTexture %null-pointer)
+	   
+	   (loop (+ n 1))
+	   ;; text loop
+	   ))))
+	   |#
+
+	   ;; show render
+	   (sdl-render-present render)
+	   
+#|
+	   //Clear screen
+                SDL_RenderClear( gRenderer );
+
+                //Render texture to screen
+                SDL_RenderCopy( gRenderer, gTexture, NULL, NULL );
+
+                //Update screen
+                SDL_RenderPresent( gRenderer );
+		
+	   
+	   ;; clear the surface?
+	   (sdl-fill-rect surface %null-pointer 0)	   
+	   ;; apply image
+	   ;;(sdl-blit-surface hello-bitmap %null-pointer surface %null-pointer)
+	   ;;(applyStretchedImage surface screen-width screen-height)
+	   (sdl-upper-blit-scaled hello-bitmap %null-pointer surface %null-pointer)
+	   
+	   ;; random rectangle somewhere
+	   (sdl-fill-rect surface (make-sdl-rect-pointer 400 100 50 50) (make-sdl-color 255 0 0))
+	   (sdl-fill-rect surface (make-sdl-rect-pointer 500 100 50 50) (make-sdl-color 0 0 255))
+	   (sdl-fill-rect surface (make-sdl-rect-pointer 600 100 50 50) (make-sdl-color 0 255 0))
+	   (sdl-fill-rect surface (make-sdl-rect-pointer (- *mouse-x* 25) (- *mouse-y* 25) 50 50) (make-sdl-color 0 0 255))
+	   
+	   ;; update surface
+	   (sdl-update-window-surface window)
+|#
+	   
+	   ) ;; while not quit 
+    ;; cleanup
+    (ttf-close-font font)	     
+    (sdl-free-surface hello-bitmap)
+    
+    (sdl-destroy-renderer render)
+    (sdl-destroy-window window)
+    
+    (ttf-quit)
+    (img-quit)
+    (sdl-quit)))
+
+#+end_src
+
+
+
+
+
