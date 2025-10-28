@@ -1,5 +1,95 @@
 # Guile SDL2 Experiment 
 
+# Holdup on sdl2 development + cairo
+
+could not for life of me understand why cairo window was just showing black , down to flushing the surface ? 
+
+```
+void sanity_check_hack(SDL_Window * window, SDL_Renderer *renderer, SDL_Surface *sdl_surface){
+
+  printf("SDL_Window *window = %p\n", window);
+  printf("SDL_Renderer *renderer = %p\n", renderer);
+  printf("SDL_Surface *sdl_surface = %p\n", sdl_surface);
+
+  /* return ; // early escape */
+  
+  
+  int window_width;
+  int window_height;
+  SDL_GetWindowSize(window, &window_width, &window_height);
+
+  printf("window_width=%d\n"
+         "window_height=%d\n",
+         window_width, window_height);
+
+  int renderer_width;
+  int renderer_height;
+  SDL_GetRendererOutputSize(renderer, &renderer_width, &renderer_height);
+
+  printf("renderer_width=%d\n"
+         "renderer_height=%d\n",
+         renderer_width, renderer_height);
+
+  int cairo_x_multiplier = renderer_width / window_width;
+  int cairo_y_multiplier = renderer_height / window_height;
+
+
+  cairo_surface_t *cr_surface = cairo_image_surface_create_for_data((unsigned char *)sdl_surface->pixels,
+                                                                       CAIRO_FORMAT_RGB24,
+                                                                       sdl_surface->w,
+                                                                       sdl_surface->h,
+                                                                       sdl_surface->pitch);
+
+  cairo_surface_set_device_scale(cr_surface, cairo_x_multiplier, cairo_y_multiplier);
+
+  cairo_t *cr = cairo_create(cr_surface);
+
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+
+  // White background with SDL2 API
+  // SDL_FillRect(sdl_surface, NULL, SDL_MapRGB(sdl_surface->format, 255, 255, 255));
+
+  // White background with cairo API
+  cairo_set_source_rgba(cr, 1, 1, 1, 1.0);
+  cairo_rectangle(cr, 0, 0, 640, 480);
+  cairo_fill(cr);
+
+  double xc = 320.0;
+  double yc = 240.0;
+  double radius = 200.0;
+  double angle1 = 45.0  * (M_PI/180.0);
+  double angle2 = 180.0 * (M_PI/180.0);
+
+  cairo_set_source_rgba(cr, 0, 0, 0, 1.0);
+  cairo_set_line_width(cr, 10.0);
+  cairo_arc(cr, xc, yc, radius, angle1, angle2);
+  cairo_stroke(cr);
+
+  cairo_set_source_rgba(cr, 1, 0.2, 0.2, 0.6);
+  cairo_set_line_width(cr, 6.0);
+
+  cairo_arc(cr, xc, yc, 10.0, 0, 2*M_PI);
+  cairo_fill(cr);
+
+  cairo_arc(cr, xc, yc, radius, angle1, angle1);
+  cairo_line_to(cr, xc, yc);
+  cairo_arc(cr, xc, yc, radius, angle2, angle2);
+  cairo_line_to(cr, xc, yc);
+  cairo_stroke(cr);
+
+  cairo_surface_flush(cr_surface);
+  cairo_destroy(cr);
+  cairo_surface_destroy(cr_surface);
+  
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, sdl_surface);
+  SDL_FreeSurface(sdl_surface);
+
+  SDL_RenderCopy(renderer, texture, NULL, NULL);
+
+}
+```
+
 # Setup Development Environment 
 
 decide location of the repository - where is it actually on the drive . Next conjure up a unique name that will not confuse linux programs . 
@@ -120,6 +210,9 @@ Now in another module we can simply refer to that macro inc definition without c
 ```
 
 In conclusion , we have setup dynamic link library directory and load paths , we have everything in place to be able to load our own shared libraries and dynamically load the platform libraries such as SDL2 , cairo , haffbuzz and whatever other libraries are needed.
+
+# Github markdown
+
 [jump to Graphical](#graphical)
 
 [jump to Graphical environment](#graphical-environment)

@@ -208,8 +208,18 @@ Uint32	Amask	the alpha mask for the pixels."
     ;; 	    (pointer->string
     ;; 	     (sdl-get-pixelformat-name *cairo-format-rgb24*)))
     
-    ;; 
+    ;; a full routine to do most cairo stuff from c 
     (sanity-check-hack window render surface)
+
+    ;; great - really working !
+    ;; a blue square somewhere on render surface
+    (sdl-set-render-draw-color render #x00 #x00 #xFF #xFF)	   	   	   
+    (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+      (bytevector-s32-native-set! bv 0 500)
+      (bytevector-s32-native-set! bv 4 100)
+      (bytevector-s32-native-set! bv 8 100)
+      (bytevector-s32-native-set! bv 12 100)
+      (sdl-render-fill-rect render (bytevector->pointer bv)))
 
     
     #|
@@ -294,7 +304,7 @@ Uint32	Amask	the alpha mask for the pixels."
 
     
     
-    (sleep 25)
+    (sleep 5)
 
     ;; (when (not (equal? cairo-texture %null-pointer))
     ;;   (sdl-destroy-texture cairo-texture)
