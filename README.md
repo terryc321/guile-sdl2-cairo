@@ -6,6 +6,7 @@ decide location of the repository - where is it actually on the drive . Next con
 chosen DEVELOPER . now set this variable in .bashrc so every time start a terminal , the shell environment will see this set
 ```
 ~/.bashrc
+=================================================================
 export DEVELOPER=/home/terry/code/guile-scheme/guile-sdl2-cairo/src
 ```
 
@@ -23,6 +24,7 @@ create a shell script called set-environment.sh . when run it sets LTDL_LIBRARY_
 
 ```
 set-environment.sh 
+=========================================
 
 #!/bin/bash
 
@@ -50,7 +52,74 @@ now the terminal environment has DEVELOPER and LTDL_LIBRARY_PATH set
 
 ```
 
+install emacs. Inside emacs using package-install , install geiser and geiser-guile packages.  maybe also company , company box , yasnippet ...
 
+next we must venture into emacs init file .init.el and create the following elisp entry which will be read by geiser on startup.
+
+```
+;; DEVELOPER
+(setq geiser-guile-init-file (concat (getenv "DEVELOPER") "/" "geiser-guile-init.scm"))
+```
+
+this means whenever geiser guile starts in emacs it will tell guile to read the geiser-guile-init.scm file .
+
+```
+file : $DEVELOPER/geiser-guile-init.scm
+=========================================
+(let ((toplevel (getenv "DEVELOPER")))
+  (add-to-load-path toplevel))
+```
+
+this is guile code to add path to the %load-path .
+
+the macros directory contains a file called inc.scm , which contains two simple macros that increment and decrement
+a variable supplied.
+
+```
+file : $DEVELOPER/macros/inc.scm
+=======================================
+(define-module (macros inc)
+  #:export (inc!
+	    dec!
+	    ))
+
+(define-syntax inc!
+  (syntax-rules ()
+    ((_ x) (set! x (+ x 1)))
+    ((_ x n) (set! x (+ x n)))))
+
+;; (let ((x 1))(inc! x) x) => 2
+;; (let ((x 1))(inc! x 2) x) => 3
+
+(define-syntax dec!
+  (syntax-rules ()
+    ((_ x) (set! x (- x 1)))
+    ((_ x n) (set! x (- x n)))))
+
+;; (let ((x 1))(dec! x) x) => 0
+;; (let ((x 1))(dec! x 2) x) => -1
+```
+
+we can leverage the guile module system to make this available now in any other code as long as we have the 
+load path correctly set . 
+
+we could go futher and ensure macros directory was globally unique identifier to prevent name clash . 
+
+open question as to where (macros inc) is actually sourced from - as this could lead to bugs.
+
+presumably the directories are searched in order they appear in the %load-path.
+
+[ ] %load-path searched sequentially 
+
+Now in another module we can simply refer to that macro inc definition without caring where it is on the file system.  This allows for more portable code if we were to move the files around , position independent code.
+
+```
+(use-modules (macros inc))
+
+(let ((x 1)) (inc! x) x) => 2
+```
+
+In conclusion , we have setup dynamic link library directory and load paths , we have everything in place to be able to load our own shared libraries and dynamically load the platform libraries such as SDL2 , cairo , haffbuzz and whatever other libraries are needed.
 
 
 ## Emacs magit workflow
