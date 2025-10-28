@@ -120,9 +120,9 @@ Now in another module we can simply refer to that macro inc definition without c
 ```
 
 In conclusion , we have setup dynamic link library directory and load paths , we have everything in place to be able to load our own shared libraries and dynamically load the platform libraries such as SDL2 , cairo , haffbuzz and whatever other libraries are needed.
-[jump to Graphical](# Graphical)
+[jump to Graphical](#graphical)
 
-[jump to Graphical environment](# Graphical Environment)
+[jump to Graphical environment](#graphical-environment)
 
 
 ## Emacs magit workflow
