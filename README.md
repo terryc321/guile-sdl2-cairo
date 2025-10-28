@@ -1,5 +1,58 @@
 # Guile SDL2 Experiment 
 
+# Setup Development Environment 
+
+decide location of the repository - where is it actually on the drive . Next conjure up a unique name that will not confuse linux programs . 
+chosen DEVELOPER . now set this variable in .bashrc so every time start a terminal , the shell environment will see this set
+```
+~/.bashrc
+export DEVELOPER=/home/terry/code/guile-scheme/guile-sdl2-cairo/src
+```
+
+
+```
+echo $DEVELOPER
+/home/terry/code/guile-scheme/guile-sdl2-cairo/src
+```
+
+this allows us to have a known good location from which to base other environment variables.
+
+LTDL_LIBRARY_PATH is critical to guile to finding the libpixelformat.so shared library of this project , as it is not installed by default.
+
+create a shell script called set-environment.sh . when run it sets LTDL_LIBRARY_PATH . 
+
+```
+set-environment.sh 
+
+#!/bin/bash
+
+# load this into terminal using
+# source set-environment.sh
+
+export LTDL_LIBRARY_PATH="$DEVELOPER/pixelformat"
+
+```
+
+to run this correctly we must source it 
+
+```
+> source set-environment.sh
+```
+
+now the terminal environment has DEVELOPER and LTDL_LIBRARY_PATH set 
+
+```
+> echo $DEVELOPER
+/home/terry/code/guile-scheme/guile-sdl2-cairo/src
+
+> echo $LTDL_LIBRARY_PATH
+/home/terry/code/guile-scheme/guile-sdl2-cairo/src/pixelformat
+
+```
+
+
+
+
 ## Emacs magit workflow
 
 lots of .gitignore
