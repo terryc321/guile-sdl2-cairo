@@ -503,7 +503,33 @@ function myProcessEnum(i,e){
     }
 }
 
-
+function myProcessType(tag){
+    if (tag  === ':pointer'){
+	return "'*"
+    }
+    else if (tag === ':void'){
+	return "void"
+    }
+    else if (tag === ':int'){
+	return "int"
+    }
+    else if (tag === ':float'){
+	return "float"
+    }
+    else if (tag === ':long'){
+	return "long"
+    }    
+    else if (tag === ':unsigned-int'){
+	return "uint"
+    }
+    else if (tag === ':unsigned-long'){
+	return "ulong"
+    }
+    else if (tag === ':double'){
+	return "double"
+    }
+    return "?"	    
+}
 
 
 function myProcessParam(p){
@@ -512,20 +538,12 @@ function myProcessParam(p){
 	var tt = p['type']
 	if ('tag' in tt){
 	    var tag = tt['tag']
-	    if (tag  === ':pointer'){
-		return "'*"
-	    }
-	    else if (tag === ':int'){
-		return "int"
-	    }
-	    else if (tag === ':unsigned-int'){
-		return "uint"
-	    }
-	    else if (tag === ':double'){
-		return "double"
+	    var r = myProcessType(tag)
+	    if (r !== "?"){
+		return r
 	    }
 	    else if (tag in enums){
-		return "int"
+		return enums[tag]
 	    }
 	    else {
 		err = 1
@@ -548,17 +566,12 @@ function myProcessParam(p){
 function myProcessReturn(i,e){
     var ret = e['return-type']
     var tag = ret['tag']
-    if (tag === ":int"){
-	return "int"
-    }
-    else if (tag === ":pointer"){
-	return "'*"
-    }
-    else if (tag === ":void"){
-	return "void"
+    var r = myProcessType(tag)
+    if (r !== "?"){
+	return r
     }
     else if (tag in enums){
-	return "int"
+	return enums[tag]
     }
     else {
 	err = 1
@@ -635,7 +648,13 @@ function allTypedefs(){
 		enums[name] = "int"
 		pr(`typedef at ${i} : ${name} is an int`)
 	    }
+	    else if ('type' in e && 'tag' in e['type'] && e['type']['tag'] == ':function-pointer'){
+		var name = e['name']
+		enums[name] = "?fn-ptr?"
+		pr(`typedef at ${i} : ${name} is a function pointer`)
+	    }
 	    else {
+		err = 1
 		pr(`typedef BAD at ${i} is ${cffi[i]}`)
 	    }
 	}
@@ -713,6 +732,39 @@ function go(){
     pr(``)
     pr(`;; =================================== `)
     pr(``)
-
     
 }
+
+function dump(){
+    for (var i =0; i < cffi.length ; i++){
+	if(i in good){
+	    let g = good[i]
+	    if ('out' in g){
+		if (g.out == "??"){
+		}
+		else{
+		    pr(g.out)
+		    pr(``)
+		}
+	    }
+	    else {
+		//?
+	    }
+	}
+    }
+}
+
+
+/*
+
+start javascript node
+> node
+> .load h
+> go()
+> dump()
+
+as a starting off position it certainly dumps a lot of stuff on the screen that looks plausible
+javascript - so mileage may vary
+
+
+  */
