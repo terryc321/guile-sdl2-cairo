@@ -1,10 +1,8 @@
 
-* Guile SDL2 FFI
+* Foreign Function Interfaces Book
 
-see sdl2.org file 
+** summary.md
 
+** technicals.md
 
-```lisp
-(use-modules (graphics sdl2))
-```
 

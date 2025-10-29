@@ -1,0 +1,11 @@
+;;;; myproject.asd
+
+(asdf:defsystem #:myproject
+  :description "Describe myproject here"
+  :author "Your Name <your.name@example.com>"
+  :license  "Specify license here"
+  :version "0.0.1"
+  :serial t
+  :depends-on (#:cl-autowrap) ;; rather than cl-autowrap/libffi
+  :components ((:file "package")
+               (:file "myproject")))

@@ -1,0 +1,3 @@
+[
+{ "tag": "const", "name": "__GCC_HAVE_DWARF2_CFI_ASM", "ns": 0, "location": "<command line>:1:9", "type": { "tag": ":long", "bit-size": 64, "bit-alignment": 64 }, "value": 1 }
+]
