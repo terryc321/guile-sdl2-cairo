@@ -143,6 +143,9 @@ Uint32	Amask	the alpha mask for the pixels."
 	(screen-width 640)
 	(screen-height 480))
 
+    
+    (format #t "cairo version ~a~%" (cairo-version-string))
+        
     (define event-counter 0)
     (define init-result (sdl-init *sdl-init-video*))
     (format #t "init-result ~a~%" init-result)

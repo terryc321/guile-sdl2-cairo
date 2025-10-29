@@ -404,6 +404,7 @@ cairo-stroke
 cairo-arc
 cairo-line-to
 cairo-destroy
+cairo-version-string
 ))
 
 (use-modules (system foreign-library)) ;; probably only need system foreign
@@ -1182,6 +1183,28 @@ Since: 1.0"
   (foreign-library-function "libcairo" "cairo_destroy"
                             #:return-type void
                             #:arg-types (list '*)))
+
+
+
+;; we need convert c char* to scheme string
+;; (pointer->string ..)
+(define (cairo-version-string)
+  "const char * cairo_version_string (void);
+Returns the version of the cairo library as a human-readable string of the form \"X.Y.Z\".
+
+See also cairo_version() as well as the compile-time equivalents CAIRO_VERSION_STRING and CAIRO_VERSION.
+
+Returns
+a string containing the version.
+Since: 1.0"
+  (pointer->string
+   (lowlevel-cairo-version-string)))
+
+
+(define lowlevel-cairo-version-string
+  (foreign-library-function "libcairo" "cairo_version_string"
+                            #:return-type '*
+                            #:arg-types (list)))
 
 
 
