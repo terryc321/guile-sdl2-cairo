@@ -972,6 +972,7 @@ int SDL_UpperBlit
   (foreign-library-function "libcairo" "cairo_set_line_width"
                             #:return-type void
                             #:arg-types (list '* double)))
+
 (define (cairo-set-line-width cr width)
   "cairo_set_line_width ()
 void
