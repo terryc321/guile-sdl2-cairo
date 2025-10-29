@@ -1,5 +1,7 @@
 
-# Parsing include header files
+
+
+# Parsing c2ffi output
 
 c2ffi
 
@@ -7,16 +9,25 @@ c2ffi
 c2ffi /usr/include/cairo/cairo.h
 ```
 
-```
+had a go at trying understand output of c2ffi
 
 ```
+> node
+.load h
+go()
+dump()
+```
 
+most stuff is okay as long as not pointers to functions, structs are tricky, 
+plain pointer , int, double ,float ,unsigned-long and like are easy
+
+we wrote something in javascript 
 
 
 # Parsing documentation
 
 
-
+```
 function read(){
  var procs = []
  var all = ""
@@ -46,8 +57,19 @@ function read(){
 var s = read()
 var s2 = s.replace(/\;/g ,' ')
 var s3 = s2.replace(/\_/g, '-')
-/* var s4 = s3.replace(/\,/g, ' ') */
+```
 
+ultimately at end of day documentation on a project will not be in the source code because its too 
+tricky to get everything working , then write about how it works , 
+so most people just get it working and documentation says look at source code , no more
+
+
+
+
+
+```
+/* var s4 = s3.replace(/\,/g, ' ') */
+```
 
 
 
