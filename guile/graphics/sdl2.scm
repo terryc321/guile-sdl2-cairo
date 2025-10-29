@@ -31,6 +31,7 @@ sdl-unlock-surface
 
 
 sdl-get-window-size
+sdl-get-renderer-output-size
 
 sanity-check-hack ;; <<<<< 
 
@@ -496,11 +497,25 @@ cairo-version-string
     (sdl-create-window (string->pointer title) x y width height flags)))
 
 
-;; void SDL_GetWindowSize(SDL_Window * window, int *w,   int *h);
-(define sdl-get-window-size 
+(define (sdl-get-window-size win wid hgt)
+  "sdl-get-window-size win* &wid &hgt"
+  (lowlevel-sdl-get-window-size win wid hgt))
+
+(define lowlevel-sdl-get-window-size
   (foreign-library-function "libSDL2" "SDL_GetWindowSize"
                             #:return-type void
                             #:arg-types (list '* '* '* )))
+
+(define (sdl-get-renderer-output-size render wid hgt)
+  "sdl-get-renderer-output-size render &wid &hgt"
+  (lowlevel-sdl-get-renderer-output-size render wid hgt)) 
+
+(define lowlevel-sdl-get-renderer-output-size
+  (foreign-library-function "libSDL2" "SDL_GetRendererOutputSize"
+                            #:return-type void
+                            #:arg-types (list '* '* '* )))
+
+
 
 ;; gScreenSurface = SDL_GetWindowSurface( gWindow );
 (define sdl-get-window-surface 
