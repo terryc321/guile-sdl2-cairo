@@ -144,9 +144,6 @@ Uint32	Amask	the alpha mask for the pixels."
 	(screen-height 480))
 
     (define event-counter 0)
-
-    
-    
     (define init-result (sdl-init *sdl-init-video*))
     (format #t "init-result ~a~%" init-result)
     
@@ -208,8 +205,77 @@ Uint32	Amask	the alpha mask for the pixels."
     ;; 	    (pointer->string
     ;; 	     (sdl-get-pixelformat-name *cairo-format-rgb24*)))
     
-    ;; a full routine to do most cairo stuff from c 
+    ;; a full routine to do most cairo stuff from c
+    ;;
+    ;; ===============================================
     ;;(sanity-check-hack window render surface)
+    ;;
+    ;;      C          LISP
+    ;; -----------------------
+    ;; sdl_surface => surface
+    ;; window => window
+    ;; renderer => render
+    ;; ===============================================
+
+    ;; provide c routine sdl-get-window-size with memoryt for width  , memory for height
+    ;;     which c code will then alter , which scheme can then interpret as an int - if that is even correct type
+    ;; 
+    ;;(sdl-get-window-size window &width &height)
+    ;;(sdl-get-renderer-output-size render &render-width &render-height) ??
+
+    ;; (cairo-image-surface-create-for-data ...)
+    
+    (define stride (cairo-format-stride-for-width *cairo-format-rgb24* screen-width))    
+    (define cairo-surface (cairo-image-surface-create-for-data (surface-pixels surface)
+							       *cairo-format-rgb24* ;;*cairo-format-argb32* 
+							       (surface-width surface)
+							       (surface-height surface)
+							       stride))
+    (define cr (cairo-create cairo-surface))
+
+    (sdl-set-render-draw-color render 0 0 0 0)
+    (sdl-render-clear render)
+    (cairo-set-source-rgba cr 1 1 1 1)
+    (cairo-rectangle cr 0 0 640 480)
+    (cairo-fill cr)
+
+    (define xc 320.0)
+    (define yc 240.0)
+    (define radius 200.0)
+    (define pi (acos -1)) ;; 3.1415926535898.. ish 
+    (define angle1 (* 45 (/ pi 180)))
+    (define angle2 (* 180 (/ pi 180)))
+    
+    (cairo-set-source-rgba cr 0 0 0 1)
+    (cairo-set-line-width cr 10)
+    (cairo-arc cr xc yc radius angle1 angle2)
+    (cairo-stroke cr)
+    (cairo-set-source-rgba cr 1 0.2 0.2 0.6)    
+    (cairo-set-line-width cr 6.0)
+    (cairo-arc cr xc yc 10.0 0 (* 2 pi))
+    (cairo-fill cr) 
+    (cairo-arc cr  xc  yc  radius  angle1  angle1) 
+    (cairo-line-to cr  xc  yc) 
+    (cairo-arc cr  xc  yc  radius  angle2  angle2) 
+    (cairo-line-to cr  xc  yc) 
+    (cairo-stroke cr) 
+
+    ;;(cairo-surface-flush surface)
+    (cairo-surface-flush cairo-surface)
+
+    
+    (cairo-destroy cr)
+    ;; cairo_destroy(cr) 
+    ;; cairo_surface_destroy(cr_surface)   
+    ;; SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer  sdl_surface) 
+    ;; SDL_FreeSurface(sdl_surface) 
+    ;; SDL_RenderCopy(renderer  texture  NULL  NULL) 
+    (let ((cairo-texture (sdl-create-texture-from-surface render surface)))
+      (when (not (equal? cairo-texture %null-pointer))
+	(sdl-render-copy render cairo-texture %null-pointer %null-pointer)))  
+
+    ;; IT WORKS !!!
+    
 
     ;; great - really working !
     ;; a blue square somewhere on render surface

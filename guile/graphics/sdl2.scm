@@ -13,7 +13,8 @@
 	    *sdl-init-everything*
 	    sdl-init
 	    sdl-quit
-  sdl-create-window
+	    
+sdl-create-window
 create-window
 sdl-get-window-surface
 sdl-free-surface
@@ -381,9 +382,11 @@ ttf-render-utf8-blended-wrapped
 ttf-open-font
 ttf-close-font
 
-  ;; some cairo stuff - not sure it works yet
+;; some cairo stuff - not sure it works yet
+
 *cairo-format-rgb24* ;; ??
 *cairo-format-argb32*
+
 
 cairo-format-stride-for-width
 cairo-image-surface-create
@@ -395,7 +398,12 @@ cairo-set-source-rgba
 cairo-create
 cairo-fill
 cairo-surface-flush
-  
+
+cairo-set-line-width
+cairo-stroke
+cairo-arc
+cairo-line-to
+cairo-destroy
 ))
 
 (use-modules (system foreign-library)) ;; probably only need system foreign
@@ -942,7 +950,7 @@ int SDL_UpperBlit
 
 
 
-;;
+
 ;; cairo_t *cairo_create( cairo_surface_t *)
 ;; cairo_t is cairo context
 ;; cairo_surface_t is a surface compatible with cairo 24 bit 
@@ -958,11 +966,224 @@ int SDL_UpperBlit
                             #:arg-types (list '*)))
 
 
+;;void cairo_set_line_width (cairo_t *cr, double width);
+(define lowlevel-cairo-set-line-width
+  (foreign-library-function "libcairo" "cairo_set_line_width"
+                            #:return-type void
+                            #:arg-types (list '* double)))
+(define (cairo-set-line-width cr width)
+  "cairo_set_line_width ()
+void
+cairo_set_line_width (cairo_t *cr,
+                      double width);
+Sets the current line width within the cairo context. The line width value specifies the diameter of a pen that is circular in user space, (though device-space pen may be an ellipse in general due to scaling/shear/rotation of the CTM).
+
+Note: When the description above refers to user space and CTM it refers to the user space and CTM in effect at the time of the stroking operation, not the user space and CTM in effect at the time of the call to cairo_set_line_width(). The simplest usage makes both of these spaces identical. That is, if there is no change to the CTM between a call to cairo_set_line_width() and the stroking operation, then one can just pass user-space values to cairo_set_line_width() and ignore this note.
+
+As with the other stroke parameters, the current line width is examined by cairo_stroke(), and cairo_stroke_extents(), but does not have any effect during path construction.
+
+The default line width value is 2.0.
+
+Parameters
+cr
+
+a cairo_t
+
+ 
+width
+
+a line width
+
+ 
+Since: 1.0"
+  (lowlevel-cairo-set-line-width cr width))
+
+
+(define (cairo-stroke cr)
+  "cairo_stroke ()
+void cairo_stroke (cairo_t *cr);
+A drawing operator that strokes the current path according to the current line width, line join, line cap, and dash settings. After cairo_stroke(), the current path will be cleared from the cairo context. See cairo_set_line_width(), cairo_set_line_join(), cairo_set_line_cap(), cairo_set_dash(), and cairo_stroke_preserve().
+
+Note: Degenerate segments and sub-paths are treated specially and provide a useful result. These can result in two different situations:
+
+Zero-length \"on\" segments set in cairo_set_dash(). If the cap style is CAIRO_LINE_CAP_ROUND or CAIRO_LINE_CAP_SQUARE then these segments will be drawn as circular dots or squares respectively. In the case of CAIRO_LINE_CAP_SQUARE, the orientation of the squares is determined by the direction of the underlying path.
+
+A sub-path created by cairo_move_to() followed by either a cairo_close_path() or one or more calls to cairo_line_to() to the same coordinate as the cairo_move_to(). If the cap style is CAIRO_LINE_CAP_ROUND then these sub-paths will be drawn as circular dots. Note that in the case of CAIRO_LINE_CAP_SQUARE a degenerate sub-path will not be drawn at all, (since the correct orientation is indeterminate).
+
+In no case will a cap style of CAIRO_LINE_CAP_BUTT cause anything to be drawn in the case of either degenerate segments or sub-paths.
+
+Parameters
+cr
+
+a cairo context
+
+ 
+Since: 1.0
+
+"
+(lowlevel-cairo-stroke cr))
+
+(define lowlevel-cairo-stroke
+  (foreign-library-function "libcairo" "cairo_stroke"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+(define (cairo-arc cr xc yc radius angle1 angle2)
+  "cairo_arc ()
+void
+cairo_arc (cairo_t *cr,
+           double xc,
+           double yc,
+           double radius,
+           double angle1,
+           double angle2);
+Adds a circular arc of the given radius to the current path. The arc is centered at (xc , yc ), begins at angle1 and proceeds in the direction of increasing angles to end at angle2 . If angle2 is less than angle1 it will be progressively increased by 2*M_PI until it is greater than angle1 .
+
+If there is a current point, an initial line segment will be added to the path to connect the current point to the beginning of the arc. If this initial line is undesired, it can be avoided by calling cairo_new_sub_path() before calling cairo_arc().
+
+Angles are measured in radians. An angle of 0.0 is in the direction of the positive X axis (in user space). An angle of M_PI/2.0 radians (90 degrees) is in the direction of the positive Y axis (in user space). Angles increase in the direction from the positive X axis toward the positive Y axis. So with the default transformation matrix, angles increase in a clockwise direction.
+
+(To convert from degrees to radians, use degrees * (M_PI / 180.).)
+
+This function gives the arc in the direction of increasing angles; see cairo_arc_negative() to get the arc in the direction of decreasing angles.
+
+The arc is circular in user space. To achieve an elliptical arc, you can scale the current transformation matrix by different amounts in the X and Y directions. For example, to draw an ellipse in the box given by x , y , width , height :
+
+1
+2
+3
+4
+5
+cairo_save (cr);
+cairo_translate (cr, x + width / 2., y + height / 2.);
+cairo_scale (cr, width / 2., height / 2.);
+cairo_arc (cr, 0., 0., 1., 0., 2 * M_PI);
+cairo_restore (cr);
+Parameters
+cr
+
+a cairo context
+
+ 
+xc
+
+X position of the center of the arc
+
+ 
+yc
+
+Y position of the center of the arc
+
+ 
+radius
+
+the radius of the arc
+
+ 
+angle1
+
+the start angle, in radians
+
+ 
+angle2
+
+the end angle, in radians
+
+ 
+Since: 1.0
+
+"
+  (lowlevel-cairo-arc cr xc yc radius angle1 angle2))
+
+;;lowlevel-cairo-arc cr xc yc radius angle1 angle2
+(define lowlevel-cairo-arc
+  (foreign-library-function "libcairo" "cairo_arc"
+                            #:return-type void
+                            #:arg-types (list '*
+					      double
+					      double
+					      double
+					      double
+					      double)))
+
+(define (cairo-line-to cr x y)
+  "cairo_line_to ()
+void
+cairo_line_to (cairo_t *cr,
+               double x,
+               double y);
+Adds a line to the path from the current point to position (x , y ) in user-space coordinates. After this call the current point will be (x , y ).
+
+If there is no current point before the call to cairo_line_to() this function will behave as cairo_move_to(cr , x , y ).
+
+Parameters
+cr
+
+a cairo context
+
+ 
+x
+
+the X coordinate of the end of the new line
+
+ 
+y
+
+the Y coordinate of the end of the new line
+
+ 
+Since: 1.0"
+  (lowlevel-cairo-line-to cr x y))
+
+(define lowlevel-cairo-line-to
+  (foreign-library-function "libcairo" "cairo_line_to"
+                            #:return-type void
+                            #:arg-types (list '* double double)))
+
+
+
+(define (cairo-surface-flush surface)
+  "cairo_surface_flush ()
+void
+cairo_surface_flush (cairo_surface_t *surface);
+Do any pending drawing for the surface and also restore any temporary modifications cairo has made to the surface's state. This function must be called before switching from drawing on the surface with cairo to drawing on it directly with native APIs, or accessing its memory outside of Cairo. If the surface doesn't support direct access, then this function does nothing.
+
+Parameters
+surface
+
+a cairo_surface_t
+
+ 
+Since: 1.0"
+  (lowlevel-cairo-surface-flush surface))
+
 ;;void cairo_surface_flush (cairo_surface_t *surface);
-(define cairo-surface-flush
+(define lowlevel-cairo-surface-flush
   (foreign-library-function "libcairo" "cairo_surface_flush"
                             #:return-type void
                             #:arg-types (list '*)))
+
+(define (cairo-destroy cr)
+  "cairo_destroy ()
+void cairo_destroy (cairo_t *cr);
+Decreases the reference count on cr by one. If the result is zero, then cr and all associated resources are freed. See cairo_reference().
+
+Parameters
+cr
+
+a cairo_t
+
+ 
+Since: 1.0"
+  (lowlevel-cairo-destroy cr))
+
+(define lowlevel-cairo-destroy
+  (foreign-library-function "libcairo" "cairo_destroy"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
 
 ;; int SDL_PollEvent(SDL_Event * event);
 (define sdl-poll-event

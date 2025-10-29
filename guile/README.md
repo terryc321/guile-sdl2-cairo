@@ -1,3 +1,21 @@
+
+* Usage
+
+setup shell environment variables this tell guile where shared libraries are
+
+```
+export DEVELOPER=`pwd`
+source set-environment.sh
+```
+
+```
+> start emacs and navigate to demos/cairo-teenie.scm
+> C-c C-k yes
+> (cairo)
+```
+
+
+
 * SDL2 and Cairo
 
 Finally got cairo to draw onto SDL using render and texture . 
