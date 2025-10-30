@@ -1,0 +1,26 @@
+void draw(cairo_t *cr, int width, int height) {
+    double desired_aspect = 16.0 / 9.0;
+    double current_aspect = (double)width / height;
+    double draw_width, draw_height;
+    double offset_x = 0, offset_y = 0;
+
+    if (current_aspect > desired_aspect) {
+        // window is too wide
+        draw_height = height;
+        draw_width = height * desired_aspect;
+        offset_x = (width - draw_width) / 2.0;
+    } else {
+        // window is too tall
+        draw_width = width;
+        draw_height = width / desired_aspect;
+        offset_y = (height - draw_height) / 2.0;
+    }
+
+    cairo_translate(cr, offset_x, offset_y);
+    cairo_scale(cr, draw_width, draw_height);
+
+    // Now draw in normalized space (0..1)
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_rectangle(cr, 0.1, 0.1, 0.8, 0.8);
+    cairo_stroke(cr);
+}

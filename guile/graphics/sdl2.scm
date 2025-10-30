@@ -20,6 +20,9 @@
 
 	    *cairo-operator-source*
 	    
+	    cairo-identity-matrix
+	    cairo-translate
+	    cairo-scale
 	    
 cairo-set-operator	    
 cairo-paint
@@ -657,6 +660,30 @@ SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
 
 
 (define *cairo-operator-source* 1) ;; just 1 
+
+(define cairo-identity-matrix
+  (foreign-library-function "libcairo" "cairo_identity_matrix"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+;; void
+;; cairo_translate (cairo_t *cr,
+;;                  double tx,
+;;                  double ty);
+(define cairo-translate
+  (foreign-library-function "libcairo" "cairo_translate"
+                            #:return-type void
+                            #:arg-types (list '* double double)))
+
+;; void
+;; cairo_scale (cairo_t *cr,
+;;              double sx,
+;;              double sy);
+(define cairo-scale
+  (foreign-library-function "libcairo" "cairo_scale"
+                            #:return-type void
+                            #:arg-types (list '* double double)))
 
  
 ;;void cairo_set_operator (cairo_t *cr, cairo_operator_t op);

@@ -48,6 +48,7 @@
 (define *mouse-y* 0)
 (define *screen-width* 640)
 (define *screen-height* 480)
+(define *resized* #f)
 (define *quit* #f)
 
 ;; event is a union struct 36 bytes 
@@ -62,6 +63,7 @@
 (define *cairo-surface* #f)
 (define *cr* #f)
 (define *texture* #f)
+
 
 ;; =================================
 (define (main-loop)  
@@ -94,7 +96,9 @@
 		 ((*sdl-window-event-hidden*) (format #t "window event ~a hidden ~%" *event-counter*))
 		 ((*sdl-window-event-moved*) (format #t "window event ~a moved ~a ~a~%" *event-counter* data1 data2))
 		 ((*sdl-window-event-exposed*) (format #t "window event ~a exposed~%" *event-counter* ))
-		 ((*sdl-window-event-resized*) (format #t "window event ~a resized~%" *event-counter* ))
+		 ((*sdl-window-event-resized*)
+		  (handle-window-resize-event data1 data2)
+		  (format #t "window event ~a resized w = ~a / h = ~a~%" *event-counter* data1 data2))
 		 ((*sdl-window-event-changed*) (format #t "window event ~a changed~%" *event-counter* ))
 		 ((*sdl-window-event-minimized*) (format #t "window event ~a minimized~%" *event-counter* ))
 		 ((*sdl-window-event-maximized*) (format #t "window event ~a maximized~%" *event-counter* ))
@@ -151,12 +155,54 @@
        (#t #f))))
 
   (draw-frame))
-  
+
+;; ===============================
+(define (handle-window-resize-event w h)
+  (set! *screen-width* w)
+  (set! *screen-height* h)
+  (set! *resized* #t))
   
   
 ;; =================================
 
-(define (draw-cairo)  
+(define (compensate-window-resize-with-desired-aspect desired-aspect)
+  ;; is this not the default ?
+  (cairo-identity-matrix *cr*)
+  
+  (let ((current-aspect (/ *screen-width* *screen-height*))
+	(draw-width 0)
+	(draw-height 0)
+	(offset-x 0)
+	(offset-y 0))
+
+    (cond
+     ((> current-aspect desired-aspect)
+      ;;window too wide
+      (set! draw-height *screen-height*)
+      (set! draw-width (/ *screen-height* desired-aspect))
+      (set! offset-x (/ 2 (- *screen-width* draw-width))))
+     (#t ;; window too tall
+      (set! draw-width *screen-width*)
+      (set! draw-height (/ *screen-width* desired-aspect))
+      (set! offset-y (/ 2 (- *screen-height* draw-height)))))
+
+    (cairo-translate *cr* offset-x offset-y)
+    (cairo-scale *cr* draw-width draw-height)
+
+    ;; now draw in normalized space
+    ))
+
+;; ==========================
+
+(define (draw-cairo)
+
+  ;; compensate resize 
+  (when *resized*
+    ;; ?? resize compensate-window-resize-with-desired-aspect does not work ?? 
+    ;;(compensate-window-resize-with-desired-aspect (/ 16 9))
+    (set! *resized* #f))
+
+  
   (cairo-set-source-rgba *cr* 1 1 1 1)
   (cairo-rectangle *cr* 0 0 *screen-width* *screen-height*)
   (cairo-fill *cr*)
