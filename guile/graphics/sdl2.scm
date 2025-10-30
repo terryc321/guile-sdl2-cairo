@@ -11,9 +11,19 @@
 	    *sdl-init-sensor*
 	    *sdl-init-parachute*
 	    *sdl-init-everything*
+
+	    *sdl-pixelformat-argb8888*
+	    *sdl-texture-streaming*
+				   
 	    sdl-init
 	    sdl-quit
+
+	    *cairo-operator-source*
 	    
+	    
+cairo-set-operator	    
+cairo-paint
+cairo-surface-destroy	    
 sdl-create-window
 create-window
 sdl-get-window-surface
@@ -36,16 +46,18 @@ sdl-get-renderer-output-size
 sanity-check-hack ;; <<<<< 
 
 sdl-create-texture-from-surface
+sdl-create-texture
 sdl-destroy-texture
 sdl-destroy-renderer
-sdl-create-rgb-surface
 
 sdl-get-pixelformat-name
 create-rgb24-surface
 create-argb32-surface
+sdl-create-rgb-surface
 
 sdl-map-rgb
 sdl-fill-rect
+sdl-update-texture
 sdl-update-window-surface
 sdl-convert-surface
 sdl-blit-surface
@@ -412,7 +424,10 @@ cairo-version-string
 (use-modules (system foreign))
 
 ;; guile #x means HEX value follows #xFF is 255 decimal
-  
+
+(define *sdl-pixelformat-argb8888* 372645892)
+(define *sdl-texture-streaming* 1)
+
 (define *sdl-init-timer*             #x00000001)
 (define *sdl-init-audio*             #x00000010)
 (define *sdl-init-video*             #x00000020)
@@ -615,9 +630,7 @@ SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
                             #:arg-types (list )))
 
 
-
   
-
 
 ;; nm -D /usr/lib/x86_64-linux-gnu/libSDL2.so | grep SDL_LoadBMP
 ;; 000000000004c620 T SDL_LoadBMP_RW
@@ -628,12 +641,67 @@ SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
 ;;
 
 
+
+(define (sdl-create-rgb-surface  flags w h d r g b a)
+  "SDL_Surface* SDL_CreateRGBSurface
+    (Uint32 flags, int width, int height, int depth,
+     Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask)"
+  (lowlevel-sdl-create-rgb-surface flags w h d r g b a))
+
+(define lowlevel-sdl-create-rgb-surface
+  (foreign-library-function "libSDL2" "SDL_CreateRGBSurface"
+                            #:return-type '*
+                            #:arg-types (list uint32 int int int
+					      uint32 uint32 uint32 uint32)))
+
+
+
+(define *cairo-operator-source* 1) ;; just 1 
+
+ 
+;;void cairo_set_operator (cairo_t *cr, cairo_operator_t op);
+(define cairo-set-operator
+  (foreign-library-function "libcairo" "cairo_set_operator"
+                            #:return-type void
+                            #:arg-types (list '* int)))
+
+
+
 ;; usage
 ;;SDL_DestroyWindow( gWindow );
 (define sdl-destroy-window
   (foreign-library-function "libSDL2" "SDL_DestroyWindow"
                             #:return-type void
                             #:arg-types (list '* )))
+
+
+(define (sdl-create-texture r f a w h)
+  "SDL_Texture * SDL_CreateTexture(SDL_Renderer * renderer,
+                                Uint32 format,
+                                int access, int w,
+                                int h)"
+  (lowlevel-sdl-create-texture r f a w h))
+
+(define lowlevel-sdl-create-texture 
+  (foreign-library-function "libSDL2" "SDL_CreateTexture"
+                            #:return-type '*
+                            #:arg-types (list '* uint32 int int int)))
+
+
+(define (cairo-surface-destroy s)
+  "void cairo_surface_destroy (cairo_surface_t *surface)"
+  (lowlevel-cairo-surface-destroy s))
+
+(define lowlevel-cairo-surface-destroy
+  (foreign-library-function "libcairo" "cairo_surface_destroy"
+                            #:return-type void
+                            #:arg-types (list '*)))
+
+
+
+
+
+
 
 
 ;;SDL_Texture * SDL_CreateTextureFromSurface(SDL_Renderer * renderer, SDL_Surface * surface);
@@ -673,15 +741,14 @@ SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
 ;; 						       0x0000FF00, /* Gmask */
 ;; 						       0x000000FF, /* Bmask */
 ;; 						       0); /* Amask */
-
-;; SDL_Surface* SDL_CreateRGBSurface
-;;     (Uint32 flags, int width, int height, int depth,               u i i i
-;;      Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);      u u u u
-(define sdl-create-rgb-surface  
-  (foreign-library-function "libSDL2" "SDL_CreateRGBSurface"
-                            #:return-type '*
-                            #:arg-types (list uint32 int int int
-					      uint32 uint32 uint32 uint32)))
+;; ;; SDL_Surface* SDL_CreateRGBSurface
+;; ;;     (Uint32 flags, int width, int height, int depth,               u i i i
+;; ;;      Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);      u u u u
+;; (define sdl-create-rgb-surface  
+;;   (foreign-library-function "libSDL2" "SDL_CreateRGBSurface"
+;;                             #:return-type '*
+;;                             #:arg-types (list uint32 int int int
+;; 					      uint32 uint32 uint32 uint32)))
 
 ;;
 ;; source : https://www.cairographics.org/SDL/
@@ -740,6 +807,19 @@ SDL_Texture* loadTexture( char *path , SDL_Renderer *render)
   (foreign-library-function "libSDL2" "SDL_FillRect"
 			    #:return-type int
                             #:arg-types (list '* '* uint32)))
+
+
+
+(define (sdl-update-texture t r p p2)
+  "int SDL_UpdateTexture(SDL_Texture * texture, const SDL_Rect * rect, const void *pixels, int pitch"
+  (lowlevel-sdl-update-texture t r p p2))
+
+(define lowlevel-sdl-update-texture
+  (foreign-library-function "libSDL2" "SDL_UpdateTexture"
+			    #:return-type int
+                            #:arg-types (list '* '* '* int)))
+
+
 
 
 ;; int SDL_UpdateWindowSurface(SDL_Window * window);
@@ -893,6 +973,15 @@ int SDL_UpperBlit
                             #:arg-types (list '*)))
 
 
+
+;; void cairo_paint (cairo_t *cr);
+(define (cairo-paint cr)
+  (lowlevel-cairo-paint cr))
+
+(define lowlevel-cairo-paint
+  (foreign-library-function "libcairo" "cairo_paint"
+			    #:return-type void
+                            #:arg-types (list '*)))
 
 
 
@@ -1625,6 +1714,8 @@ typedef enum IMG_InitFlags
                             #:arg-types (list '* int uint32)))
 
 
+
+
 ;; uint32_t surface_pixelformat_format(SDL_Surface *s);
 (define surface-pixelformat-format
   (foreign-library-function "libpixelformat" "surface_pixelformat_format"
@@ -1683,11 +1774,16 @@ typedef enum IMG_InitFlags
 
 
 
-;; SDL_SetRenderDrawColor
-;; int SDL_SetRenderDrawColor(SDL_Renderer * renderer,
-;;                    Uint8 r, Uint8 g, Uint8 b,
-;;                    Uint8 a);
-(define sdl-set-render-draw-color
+(define (sdl-set-render-draw-color ren r g b a)
+  " int SDL_SetRenderDrawColor(SDL_Renderer * renderer,
+                    Uint8 r, Uint8 g, Uint8 b,
+                    Uint8 a)
+  color values red green blue alpha are 0 to 255 , not floats
+  "
+  (lowlevel-sdl-set-render-draw-color ren r g b a))
+
+
+(define lowlevel-sdl-set-render-draw-color
   (foreign-library-function "libSDL2" "SDL_SetRenderDrawColor"
                             #:return-type int
                             #:arg-types (list '* uint8 uint8 uint8 uint8)))

@@ -5,6 +5,8 @@ clang -o test `pkg-config --cflags --libs sdl2` test.c
 
 to pull values of the C macros we can code something like this and manually pick out the values
 
+
+
  */
 #include <stdio.h>
 #include <stddef.h> 
@@ -16,7 +18,17 @@ int main(){
 
   printf("this program is to test the constants that hex->decimal converter on web was accurate\n");
   printf("also it also shows SDL2 C macro constants that get lost in compilation , do not survive to the shared library\n");
+
+  printf("CAIRO_OPERATOR_SOURCE %d \n",CAIRO_OPERATOR_SOURCE);
   
+
+  
+
+  /* SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING */
+  printf("SDL_PIXELFORMAT_ARGB8888 %d \n",SDL_PIXELFORMAT_ARGB8888);
+  printf("SDL_TEXTUREACCESS_STREAMING %d \n",SDL_TEXTUREACCESS_STREAMING);
+
+
   
   printf("SDL_INIT_TIMER is 1 ? %d \n",SDL_INIT_TIMER == 1);
   printf("SDL_INIT_AUDIO is 16 ? %d\n",SDL_INIT_AUDIO == 16);
