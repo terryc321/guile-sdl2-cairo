@@ -1,22 +1,7 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; hello.scm
-;; who   : terry cadd
-;; what  : guile scheme 3.0 source code to show graphics using SDL and CAIRO
-;; when  : Wed Oct 29 22:38:33 GMT 2025
-;; where : home
-;; why   : teaching myself about ffi using guile scheme and getting a graphical program
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; be brutal when writing code , anything not strictly required gets deleted - that rule got broke fast
-;; a normal procedure definition in scheme allows user to jump to definition , rather than if use
-;; foreign call , cant goto definition
-;; also if anything goes wrong , may be able to trace it ? unlikely , but hey...
-;; this allows user to see what is going on
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;coding rule if a definition starts at beginning of line , that terminates anything unfinished up to then 
-;; and generates an error if previous s expression did not stop 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Q - how get guile scheme to add comments / documentation to symbols ?
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; tiny.scm -- smallest possible working sdl + cairo loop
+;; no input-output requires window to be force-ibly closed
+
 
 (use-modules (ice-9 optargs)) ;; optional args
 (use-modules (system foreign)) ;; %null-pointer
@@ -67,6 +52,215 @@
 
 ;; event is a union struct 36 bytes 
 (define *event* (make-bytevector 36 0))
+
+(define *first-run* #t)
+
+(define *event-counter* 0)
+(define *window* #f)
+(define *render* #f)
+(define *sdl-surface* #f)
+(define *cairo-surface* #f)
+(define *cr* #f)
+(define *texture* #f)
+
+;; =================================
+(define (main-loop)  
+  ;; poll for an event
+  (while (not (= 0 (sdl-poll-event (bytevector->pointer *event*))))
+    ;; tot up each time we have an event
+    (inc! *event-counter*)
+    (let ((type (bytevector-u32-native-ref *event* 0)))
+      (cond
+       ((= type *sdl-quit*) ;; ======== quit event ==================
+	(format #t "the user quit the application !~%")
+	;; if we quit - set quit flag to true and exit
+	(let ((type (bytevector-u32-native-ref *event* 0))
+	      (timestamp (bytevector-u32-native-ref *event* 4)))
+	  (set! *quit* #t))) ;; end quit event	 
+       ((= type *sdl-window-event*) ;; ======== window event ==================
+	(let ((type (bytevector-u32-native-ref *event* 0))
+	      (timestamp (bytevector-u32-native-ref *event* 4))
+	      (windowid (bytevector-u32-native-ref *event* 8))
+	      (event (bytevector-u8-ref *event* 12))
+	      (padding1 (bytevector-u8-ref *event* 13))
+	      (padding2 (bytevector-u8-ref *event* 14))
+	      (padding3 (bytevector-u8-ref *event* 15 ))
+	      (data1 (bytevector-s32-native-ref *event* 16 ))
+	      (data2 (bytevector-s32-native-ref *event* 20 )))
+	  ;; window events are difficult to distinguish so we gave all events polled an event counter
+	  (fcase event
+		 ((*sdl-window-event-none*) (format #t "window event ~a none~%" *event-counter*))
+		 ((*sdl-window-event-shown*) (format #t "window event ~a shown ~%" *event-counter*))
+		 ((*sdl-window-event-hidden*) (format #t "window event ~a hidden ~%" *event-counter*))
+		 ((*sdl-window-event-moved*) (format #t "window event ~a moved ~a ~a~%" *event-counter* data1 data2))
+		 ((*sdl-window-event-exposed*) (format #t "window event ~a exposed~%" *event-counter* ))
+		 ((*sdl-window-event-resized*) (format #t "window event ~a resized~%" *event-counter* ))
+		 ((*sdl-window-event-changed*) (format #t "window event ~a changed~%" *event-counter* ))
+		 ((*sdl-window-event-minimized*) (format #t "window event ~a minimized~%" *event-counter* ))
+		 ((*sdl-window-event-maximized*) (format #t "window event ~a maximized~%" *event-counter* ))
+		 ((*sdl-window-event-restored*) (format #t "window event ~a restored~%" *event-counter* ))
+		 ((*sdl-window-event-enter*) (format #t "window event ~a enter~%" *event-counter* ))
+		 ((*sdl-window-event-leave*) (format #t "window event ~a leave~%" *event-counter* ))
+		 ((*sdl-window-event-focus-gained*) (format #t "window event ~a focus gained~% " *event-counter* ))
+		 ((*sdl-window-event-focus-lost*) (format #t "window event ~a focus lost~%" *event-counter* ))
+		 ((*sdl-window-event-close*) (format #t "window event ~a close~%" *event-counter* ))
+		 ((*sdl-window-event-take-focus*) (format #t "window event ~a take focus~%" *event-counter* ))
+		 ((*sdl-window-event-hit-test*) (format #t "window event ~a hit test~%" *event-counter* ))
+		 ((*sdl-window-event-icc-prof-changed*) (format #t "window event ~a icc prof changed ~%" *event-counter* ))
+		 ((*sdl-window-event-display-changed*) (format #t "window event ~a display changed~%" *event-counter* ))
+		 (else (format #t "window event ~a something else happended ~%" *event-counter*)))
+	  #t)) ;; ==== end of window event ===
+
+       ((= type *sdl-keydown*) ;; ======== keydown event ==================
+	(let ((type (bytevector-u32-native-ref *event* 0))
+	      (timestamp (bytevector-u32-native-ref *event* 4))
+	      (windowid (bytevector-u32-native-ref *event* 8))
+	      (state (bytevector-u8-ref *event* 12))
+	      (repeat (bytevector-u8-ref *event* 13))
+	      (padding2 (bytevector-u8-ref *event* 14))
+	      (padding3 (bytevector-u8-ref *event* 15 ))
+	      (keysym-scancode (bytevector-u32-native-ref *event* 16 ))
+	      (keysym-sym (bytevector-s32-native-ref *event* 20 ))
+	      (keysym-mod (bytevector-u16-native-ref *event* 24 )))
+
+	  ;; do something first time this is run
+	  (when *first-run*
+	    ;; allows us to escape the gui event loop easily
+	    (register-keyboard-fn *sdl-scancode-escape*
+				  (lambda () (set! *quit* #t)(format #t "user quit ! ~%")))
+	    (set! *first-run* #f))
+	  
+	  ;; call relevant key handler
+	  (call-keyboard-fn keysym-scancode))) ;; end key down
+       ((= type *sdl-keyup*) ;; ======== keyup event ==================
+	;;(format #t "the user released a key !~%")
+	#f) ;; end key up 
+       ((= type *sdl-mousemotion*) ;; ======== mouse motion event ==================
+	(let ((type (bytevector-u32-native-ref *event* 0 ))
+	      (timestamp (bytevector-u32-native-ref *event* 4 ))
+	      (windowid (bytevector-u32-native-ref *event* 8 ))
+	      (state (bytevector-u32-native-ref *event* 12 ))
+	      (x (bytevector-s32-native-ref *event* 20 ))
+	      (y (bytevector-s32-native-ref *event* 24 ))
+	      (xrel (bytevector-s32-native-ref *event* 28 ))
+	      (yrel (bytevector-s32-native-ref *event* 32 )))
+	  ;; (format #t "mouse move (~a ~a ~a ~a " type timestamp windowid state)
+	  ;; (format #t " (pos:~a ~a) (rel:~a ~a) ~%" x y xrel yrel)
+	  (set! *mouse-x* x)
+	  (set! *mouse-y* y)))
+       (#t #f))))
+
+  (draw-frame))
+  
+  
+  
+;; =================================
+
+(define (draw-cairo)  
+  (cairo-set-source-rgba *cr* 1 1 1 1)
+  (cairo-rectangle *cr* 0 0 *screen-width* *screen-height*)
+  (cairo-fill *cr*)
+  ;; (define xc 320.0)
+  ;; (define yc 240.0)
+  (define xc *mouse-x*)
+  (define yc *mouse-y*)
+  (define radius 200.0)
+  (define pi (acos -1)) ;; 3.1415926535898.. ish 
+  (define angle1 (* 45 (/ pi 180)))
+  (define angle2 (* 180 (/ pi 180)))
+
+  (cairo-set-source-rgba *cr* 0 0 0 1)
+  (cairo-set-line-width *cr* 10)
+  (cairo-arc *cr* xc yc radius angle1 angle2)
+  (cairo-stroke *cr*)
+  (cairo-set-source-rgba *cr* 1 0.2 0.2 0.6)    
+  (cairo-set-line-width *cr* 6.0)
+  (cairo-arc *cr* xc yc 10.0 0 (* 2 pi))
+  (cairo-fill *cr*) 
+  (cairo-arc *cr*  xc  yc  radius  angle1  angle1) 
+  (cairo-line-to *cr*  xc  yc) 
+  (cairo-arc *cr*  xc  yc  radius  angle2  angle2) 
+  (cairo-line-to *cr*  xc  yc) 
+  (cairo-stroke *cr*) 
+  
+  (cairo-surface-flush *cairo-surface*)
+  (sdl-update-texture *texture* %null-pointer (surface-pixels *sdl-surface*) (surface-pitch *sdl-surface*))
+  (sdl-render-copy *render* *texture* %null-pointer %null-pointer))
+
+
+(define (draw-sdl)
+   ;; red square
+  (let ((bv (make-bytevector (* 4 (size-int)) 0)))
+    (bytevector-s32-native-set! bv 0 *mouse-x*)
+    (bytevector-s32-native-set! bv 4 *mouse-y*)
+    (bytevector-s32-native-set! bv 8 50)
+    (bytevector-s32-native-set! bv 12 50)
+    (sdl-set-render-draw-color *render* 0 0 255 255)
+    (sdl-render-fill-rect *render* (bytevector->pointer bv)))
+  )
+
+
+(define (draw-frame)
+  (draw-cairo)
+  (draw-sdl)
+  (sdl-render-present *render*))
+
+
+
+
+;; ================
+
+
+(define (demo)
+  (set! *quit* #f)
+  (set! *first-run* #t)  
+  (sdl-init *sdl-init-video*)
+  (set! *window* (create-window "cairo demonstration window 0.1a" *screen-width* *screen-height*))
+  (set! *render* (%sdl-create-renderer *window* -1 
+				       (logior *sdl-renderer-accelerated*  *sdl-renderer-present-vsync*)))
+
+  ;;  (set! *surface* (create-rgb-surface 0 *screen-width* *screen-height*  ))
+  (set! *sdl-surface* (sdl-create-rgb-surface 0 *screen-width* *screen-height* 32
+					  #x00FF0000 #x0000FF00 #x000000FF #xFF000000))
+
+  (set! *cairo-surface* (cairo-image-surface-create-for-data (surface-pixels *sdl-surface*)
+							     *cairo-format-argb32*
+							     *screen-width*
+							     *screen-height*
+							     (surface-pitch *sdl-surface*)))
+  (set! *cr* (cairo-create *cairo-surface*))
+  (set! *texture* (sdl-create-texture *render*
+				      *sdl-pixelformat-argb8888*
+				      *sdl-texture-streaming*
+				      *screen-width*
+				      *screen-height*))
+  (format #t "texture ~a ~%" *texture*)
+  (register-keys)
+  
+  (while (not *quit*)
+    (main-loop))
+  (cleanup))
+
+
+;;=======================
+
+;; why everything global ? so i can change it !
+(define (cleanup)
+  (cairo-destroy *cr*)
+  (cairo-surface-destroy *cairo-surface*) 
+  (sdl-free-surface *sdl-surface*)
+  (sdl-destroy-texture *texture*)
+  (sdl-destroy-renderer *render*)
+  (sdl-destroy-window *window*)
+  (sdl-quit))
+
+;;
+;; usage
+;; load using correct environment and %load-path
+;; > (demo)
+;;
+;; should see a nice pink square top right and sort of arc
+;;
 
 (define (register-keys)
   "simply assigns a routine that prints that key scancode to console "
@@ -323,324 +517,5 @@
   (register-keyboard-fn *sdl-scancode-endcall* (lambda () (format #t "user pressed sdl-scancode-endcall key ~%")))
   (register-keyboard-fn *sdl-num-scancodes* (lambda () (format #t "user pressed sdl-num-scancodes key ~%")))
   )
-
-(define *first-run* #t)
-
-(define *event-counter* 0)
-(define *window* #f)
-(define *render* #f)
-(define *surface* #f)
-(define *cairo-surface* #f)
-(define *cr* #f)
-(define *cairo-texture* #f)
-
-;; main loop is being repeatedly called from demo procedure
-;; so its possible to redefine main-loop though the coop-repl-server when it comes online
-(define (main-loop)  
-  ;; poll for an event
-  (while (not (= 0 (sdl-poll-event (bytevector->pointer *event*))))
-    ;; tot up each time we have an event
-    (inc! *event-counter*)
-    (let ((type (bytevector-u32-native-ref *event* 0)))
-      (cond
-       ((= type *sdl-quit*) ;; ======== quit event ==================
-	(format #t "the user quit the application !~%")
-	;; if we quit - set quit flag to true and exit
-	(let ((type (bytevector-u32-native-ref *event* 0))
-	      (timestamp (bytevector-u32-native-ref *event* 4)))
-	  (set! *quit* #t))) ;; end quit event	 
-       ((= type *sdl-window-event*) ;; ======== window event ==================
-	(let ((type (bytevector-u32-native-ref *event* 0))
-	      (timestamp (bytevector-u32-native-ref *event* 4))
-	      (windowid (bytevector-u32-native-ref *event* 8))
-	      (event (bytevector-u8-ref *event* 12))
-	      (padding1 (bytevector-u8-ref *event* 13))
-	      (padding2 (bytevector-u8-ref *event* 14))
-	      (padding3 (bytevector-u8-ref *event* 15 ))
-	      (data1 (bytevector-s32-native-ref *event* 16 ))
-	      (data2 (bytevector-s32-native-ref *event* 20 )))
-	  ;; window events are difficult to distinguish so we gave all events polled an event counter
-	  (fcase event
-		 ((*sdl-window-event-none*) (format #t "window event ~a none~%" *event-counter*))
-		 ((*sdl-window-event-shown*) (format #t "window event ~a shown ~%" *event-counter*))
-		 ((*sdl-window-event-hidden*) (format #t "window event ~a hidden ~%" *event-counter*))
-		 ((*sdl-window-event-moved*) (format #t "window event ~a moved ~a ~a~%" *event-counter* data1 data2))
-		 ((*sdl-window-event-exposed*) (format #t "window event ~a exposed~%" *event-counter* ))
-		 ((*sdl-window-event-resized*) (format #t "window event ~a resized~%" *event-counter* ))
-		 ((*sdl-window-event-changed*) (format #t "window event ~a changed~%" *event-counter* ))
-		 ((*sdl-window-event-minimized*) (format #t "window event ~a minimized~%" *event-counter* ))
-		 ((*sdl-window-event-maximized*) (format #t "window event ~a maximized~%" *event-counter* ))
-		 ((*sdl-window-event-restored*) (format #t "window event ~a restored~%" *event-counter* ))
-		 ((*sdl-window-event-enter*) (format #t "window event ~a enter~%" *event-counter* ))
-		 ((*sdl-window-event-leave*) (format #t "window event ~a leave~%" *event-counter* ))
-		 ((*sdl-window-event-focus-gained*) (format #t "window event ~a focus gained~% " *event-counter* ))
-		 ((*sdl-window-event-focus-lost*) (format #t "window event ~a focus lost~%" *event-counter* ))
-		 ((*sdl-window-event-close*) (format #t "window event ~a close~%" *event-counter* ))
-		 ((*sdl-window-event-take-focus*) (format #t "window event ~a take focus~%" *event-counter* ))
-		 ((*sdl-window-event-hit-test*) (format #t "window event ~a hit test~%" *event-counter* ))
-		 ((*sdl-window-event-icc-prof-changed*) (format #t "window event ~a icc prof changed ~%" *event-counter* ))
-		 ((*sdl-window-event-display-changed*) (format #t "window event ~a display changed~%" *event-counter* ))
-		 (else (format #t "window event ~a something else happended ~%" *event-counter*)))
-	  #t)) ;; ==== end of window event ===
-
-       ((= type *sdl-keydown*) ;; ======== keydown event ==================
-	(let ((type (bytevector-u32-native-ref *event* 0))
-	      (timestamp (bytevector-u32-native-ref *event* 4))
-	      (windowid (bytevector-u32-native-ref *event* 8))
-	      (state (bytevector-u8-ref *event* 12))
-	      (repeat (bytevector-u8-ref *event* 13))
-	      (padding2 (bytevector-u8-ref *event* 14))
-	      (padding3 (bytevector-u8-ref *event* 15 ))
-	      (keysym-scancode (bytevector-u32-native-ref *event* 16 ))
-	      (keysym-sym (bytevector-s32-native-ref *event* 20 ))
-	      (keysym-mod (bytevector-u16-native-ref *event* 24 )))
-
-	  ;; do something first time this is run
-	  (when *first-run*
-	    ;; allows us to escape the gui event loop easily
-	    (register-keyboard-fn *sdl-scancode-escape*
-				  (lambda () (set! *quit* #t)(format #t "user quit ! ~%")))
-	    (set! *first-run* #f))
-	  
-	  ;; call relevant key handler
-	  (call-keyboard-fn keysym-scancode))) ;; end key down
-       ((= type *sdl-keyup*) ;; ======== keyup event ==================
-	;;(format #t "the user released a key !~%")
-	#f) ;; end key up 
-       ((= type *sdl-mousemotion*) ;; ======== mouse motion event ==================
-	(let ((type (bytevector-u32-native-ref *event* 0 ))
-	      (timestamp (bytevector-u32-native-ref *event* 4 ))
-	      (windowid (bytevector-u32-native-ref *event* 8 ))
-	      (state (bytevector-u32-native-ref *event* 12 ))
-	      (x (bytevector-s32-native-ref *event* 20 ))
-	      (y (bytevector-s32-native-ref *event* 24 ))
-	      (xrel (bytevector-s32-native-ref *event* 28 ))
-	      (yrel (bytevector-s32-native-ref *event* 32 )))
-	  ;; (format #t "mouse move (~a ~a ~a ~a " type timestamp windowid state)
-	  ;; (format #t " (pos:~a ~a) (rel:~a ~a) ~%" x y xrel yrel)
-	  (set! *mouse-x* x)
-	  (set! *mouse-y* y)))
-       (#t #f))))
-
-  (draw-frame))
-  
-  
-
-;; =================================
-
-(define (draw-frame)
-  (sdl-set-render-draw-color *render* 0 0 0 0)
-  (sdl-render-clear *render*)
-
-  ;; do i need to lock surface ?
-  (cairo-set-source-rgba *cr* 1 1 1 1)
-  (cairo-rectangle *cr* 0 0 640 480)
-  (cairo-fill *cr*)
-
-  (define xc 320.0)
-  (define yc 240.0)
-  (define radius 200.0)
-  (define pi (acos -1)) ;; 3.1415926535898.. ish 
-  (define angle1 (* 45 (/ pi 180)))
-  (define angle2 (* 180 (/ pi 180)))
-
-  (cairo-set-source-rgba *cr* 0 0 0 1)
-  (cairo-set-line-width *cr* 10)
-  (cairo-arc *cr* xc yc radius angle1 angle2)
-  (cairo-stroke *cr*)
-  (cairo-set-source-rgba *cr* 1 0.2 0.2 0.6)    
-  (cairo-set-line-width *cr* 6.0)
-  (cairo-arc *cr* xc yc 10.0 0 (* 2 pi))
-  (cairo-fill *cr*) 
-  (cairo-arc *cr*  xc  yc  radius  angle1  angle1) 
-  (cairo-line-to *cr*  xc  yc) 
-  (cairo-arc *cr*  xc  yc  radius  angle2  angle2) 
-  (cairo-line-to *cr*  xc  yc) 
-  (cairo-stroke *cr*) 
-
-  ;; finished with *cr*
-  (cairo-surface-flush *cairo-surface*)
-  (sdl-render-copy *render* *cairo-texture* %null-pointer %null-pointer)
-  
-  ;; draw a blue square where mouse is currently 
-  (sdl-set-render-draw-color *render* #x00 #x00 #xFF #xFF)	   	   	   
-  (let ((bv (make-bytevector (* 4 (size-int)) 0)))
-    (bytevector-s32-native-set! bv 0 *mouse-x*)
-    (bytevector-s32-native-set! bv 4 *mouse-y*)
-    (bytevector-s32-native-set! bv 8 50)
-    (bytevector-s32-native-set! bv 12 50)
-    (sdl-render-fill-rect *render* (bytevector->pointer bv)))
-  ;; render it !
-  (sdl-render-present *render*))
-
-;; ================
-
-#|
-(sdl-set-render-draw-color render 0 0 0 0)
-(sdl-render-clear render)
-(cairo-set-source-rgba cr 1 1 1 1)
-(cairo-rectangle cr 0 0 640 480)
-(cairo-fill cr)
-
-(define xc 320.0)
-(define yc 240.0)
-(define radius 200.0)
-(define pi (acos -1)) ;; 3.1415926535898.. ish 
-(define angle1 (* 45 (/ pi 180)))
-(define angle2 (* 180 (/ pi 180)))
-
-(cairo-set-source-rgba cr 0 0 0 1)
-(cairo-set-line-width cr 10)
-(cairo-arc cr xc yc radius angle1 angle2)
-(cairo-stroke cr)
-(cairo-set-source-rgba cr 1 0.2 0.2 0.6)    
-(cairo-set-line-width cr 6.0)
-(cairo-arc cr xc yc 10.0 0 (* 2 pi))
-(cairo-fill cr) 
-(cairo-arc cr  xc  yc  radius  angle1  angle1) 
-(cairo-line-to cr  xc  yc) 
-(cairo-arc cr  xc  yc  radius  angle2  angle2) 
-(cairo-line-to cr  xc  yc) 
-(cairo-stroke cr) 
-
-(cairo-surface-flush cairo-surface)
-
-(cairo-destroy cr)
-;; (cairo-destroy cairo-surface)
-;; cairo_surface_destroy(cr_surface)   
-;; SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer  sdl_surface) 
-;; SDL_FreeSurface(sdl_surface) 
-;; SDL_RenderCopy(renderer  texture  NULL  NULL) 
-(let ((cairo-texture (sdl-create-texture-from-surface render surface)))
-(when (not (equal? cairo-texture %null-pointer))
-(sdl-render-copy render cairo-texture %null-pointer %null-pointer)))  
-
-;; IT WORKS !!!
-;; a blue square somewhere on render surface
-(sdl-set-render-draw-color render #x00 #x00 #xFF #xFF)	   	   	   
-(let ((bv (make-bytevector (* 4 (size-int)) 0)))
-(bytevector-s32-native-set! bv 0 500)
-(bytevector-s32-native-set! bv 4 100)
-(bytevector-s32-native-set! bv 8 100)
-(bytevector-s32-native-set! bv 12 100)
-(sdl-render-fill-rect render (bytevector->pointer bv)))
-
-(sdl-render-present render)
-|#  
-
-
-
-;; ================================
-
-(define (demo)
-  (set! *quit* #f)
-  (set! *first-run* #t)*
-  (format #t "cairo version ~a~%" (cairo-version-string))
-  
-  (define init-result (sdl-init *sdl-init-video*))
-  (format #t "init-result ~a~%" init-result)
-  
-  (set! *window* (create-window "cairo demonstration window 0.1a" *screen-width* *screen-height*))
-  (format #t "window = ~a~%" *window*)
-  
-  (set! *render* (%sdl-create-renderer *window* -1 
-				       (logior *sdl-renderer-accelerated*  *sdl-renderer-present-vsync*)))
-  (cond
-   ((equal? *render* %null-pointer)   (format #t "create render failed !~%"))
-   (#t (format #t "created render success : ~a !~%" *render*)))
-
-  ;; just show what values are for window itself
-  (define window-surface (sdl-get-window-surface *window*))    
-
-  (format #t "window-surface ~a : pixelformat-format ~a : pixels ~a : width ~a : height ~a : pitch ~a ~%"
-	  window-surface	    
-	  (surface-pixelformat-format window-surface)
-	  (surface-pixels window-surface)
-	  (surface-width window-surface)
-	  (surface-height window-surface)
-	  (surface-pitch window-surface))
-  
-  (format #t "window surface : pixelformat name ~a ~%"
-	  (pointer->string
-	   (sdl-get-pixelformat-name
-	    (surface-pixelformat-format window-surface))))
-
-  (set! *surface* (create-rgb24-surface *screen-width* *screen-height*))
-  (cond
-   ((equal? *surface* %null-pointer)
-    (format #t "surface failed to be created!~%"))
-   (#t (format #t "surface ok~%")))
-
-  (format #t "surface          ~a : pixelformat-format ~a : pixels ~a : width ~a : height ~a : pitch ~a ~%"
-	  *surface*
-	  (surface-pixelformat-format *surface*)
-	  (surface-pixels *surface*)
-	  (surface-width *surface*)
-	  (surface-height *surface*)
-	  (surface-pitch *surface*))
-  
-  (format #t "surface : pixelformat name ~a ~%"
-	  (pointer->string
-	   (sdl-get-pixelformat-name
-	    (surface-pixelformat-format *surface*))))
-
-  ;; in ffi world all pointers are just pointers 
-  ;; heres an example to get width height
-  ;; pass some memory region to sdl-get-window-size and decode result using bytevector-s32-native-ref
-  ;; bytevector signed 32 bit value 
-  (let* ((bv (make-bytevector (* 2 (size-int)) 0))
-	 (w-mem (bytevector->pointer bv 0))
-	 (h-mem (bytevector->pointer bv 4)))
-    (sdl-get-window-size *window* w-mem h-mem)
-    (let ((width (bytevector-s32-native-ref bv 0))
-	  (height (bytevector-s32-native-ref bv 4)))
-      (format #t "window size is ~a by ~a ~%" width height)))
-  
-  ;; same again to get render width height
-  ;;(sdl-get-renderer-output-size render &render-width &render-height) ??
-  (let* ((bv (make-bytevector (* 2 (size-int)) 0))
-	 (w-mem (bytevector->pointer bv 0))
-	 (h-mem (bytevector->pointer bv 4)))
-    (sdl-get-renderer-output-size *render* w-mem h-mem)
-    (let ((width (bytevector-s32-native-ref bv 0))
-	  (height (bytevector-s32-native-ref bv 4)))
-      (format #t "render output size is ~a by ~a ~%" width height)))
-
-  ;; stuck with rgb24 which means no alpha capability , which is just bizarre , almost like one hand
-  ;; behind back 
-  
-  (define stride (cairo-format-stride-for-width *cairo-format-rgb24* *screen-width*))    
-  (set! *cairo-surface* (cairo-image-surface-create-for-data (surface-pixels *surface*)
-							     *cairo-format-rgb24* ;;*cairo-format-argb32* 
-							     (surface-width *surface*)
-							     (surface-height *surface*)
-							     stride))
-  (set! *cr* (cairo-create *cairo-surface*))
-
-  (set! *cairo-texture* (sdl-create-texture-from-surface *render* *surface*))
-  (format #t "cairo texture ~a ~%" *cairo-texture*)
-  
-  
-  ;; loop ??
-  (while (not *quit*)
-    (main-loop))
-  (cleanup))
-
-
-;;=======================
-
-;; why everything global ? so i can change it !
-(define (cleanup)
-  (sdl-destroy-renderer *render*)
-  (sdl-destroy-window *window*)
-  (sdl-quit))
-
-
-;;
-;; usage
-;; load using correct environment and %load-path
-;; > (cairo)
-;;
-;; should see a nice picture of blue square and some sort of two thirds clock thing
 
 

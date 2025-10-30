@@ -1,23 +1,17 @@
 
 # Demos
 
-## hello
+Essentially tiny is version made after got stuck trying to understand sdl and cairo.
 
-draws a blue square and arc . blue square drawn by SDL , arc drawn by cairo .
+can be confusing. 
 
-## keyboard
+at moment have it so do all cairo drawing, then do the sdl rectangle drawing.
 
-if have an event loop its easier if get keyboard working first ,then can press escape key to quit
+if just do sdl rectangle drawing i need to add a clear screen ,
+otherwise cairo drawing handles that for me.
 
-## mouse
-
-tracks all mouse events , basis for wack a mole 
-
-## sound ? no speakers?
-
-## graphics
-
-sdl - what can sdl do ?
-
-cairo - what can cairo do ?
+```
+events.scm = mouse keyboard window events with SDL and CAIRO graphics , 
+essentially all need to get started making an application
+```
 
