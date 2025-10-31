@@ -15,7 +15,7 @@
 ;; these modules are not in guile ecosystem they require an altered %load-path to make them visible
 (use-modules (macros fcase))
 (use-modules (macros inc))
-(use-modules (graphics sdl2))  
+(use-modules (graphics sdl2 sdl))  
 
 (define (setup) #f)
 

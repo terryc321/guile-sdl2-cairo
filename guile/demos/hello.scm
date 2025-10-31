@@ -30,7 +30,7 @@
 ;; these modules are not in guile ecosystem they require an altered %load-path to make them visible
 (use-modules (macros fcase))
 (use-modules (macros inc))
-(use-modules (graphics sdl2))  
+(use-modules (graphics sdl2 sdl))  
 
 (define (setup) #f)
 
@@ -83,7 +83,7 @@ Uint32	Amask	the alpha mask for the pixels."
   (+ x 2))
 
 
-(define (cairo)  
+(define (demo)  
   (let ((font-size 12)
 	(lines-per-screen 44) ;; how many lines per screen do we have ??
 	(chars-per-line 80) ;; wrapping 80 chars in 

@@ -1,17 +1,15 @@
 
 # Demos
 
-Essentially tiny is version made after got stuck trying to understand sdl and cairo.
 
-can be confusing. 
 
-at moment have it so do all cairo drawing, then do the sdl rectangle drawing.
+- game1.scm 
+ sdl2_image features sufficient to load a png to a texture then get some characters on screen + animation 
 
-if just do sdl rectangle drawing i need to add a clear screen ,
-otherwise cairo drawing handles that for me.
+- tiny.scm
 
-```
-events.scm = mouse keyboard window events with SDL and CAIRO graphics , 
-essentially all need to get started making an application
-```
+just proof concept guile ffi sdl +cairo 
 
+- events.scm - get events mouse window keyboard 
+
+- 

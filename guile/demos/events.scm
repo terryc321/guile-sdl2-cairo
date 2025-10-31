@@ -2,7 +2,6 @@
 ;; tiny.scm -- smallest possible working sdl + cairo loop
 ;; no input-output requires window to be force-ibly closed
 
-
 (use-modules (ice-9 optargs)) ;; optional args
 (use-modules (system foreign)) ;; %null-pointer
 (use-modules (system foreign-library))
@@ -15,7 +14,7 @@
 ;; these modules are not in guile ecosystem they require an altered %load-path to make them visible
 (use-modules (macros fcase))
 (use-modules (macros inc))
-(use-modules (graphics sdl2))  
+(use-modules (graphics sdl2 sdl))  
 
 (define (setup) #f)
 
@@ -210,7 +209,7 @@
   ;; (define yc 240.0)
   (define xc *mouse-x*)
   (define yc *mouse-y*)
-  (define radius 200.0)
+  (define radius *mouse-x*) ;; was 200.0
   (define pi (acos -1)) ;; 3.1415926535898.. ish 
   (define angle1 (* 45 (/ pi 180)))
   (define angle2 (* 180 (/ pi 180)))
