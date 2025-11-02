@@ -417,6 +417,12 @@ create-renderer
 *window-metal*  
 *window-input-grabbed*  
 
+*flip-none*
+*flip-horizontal*
+*flip-vertical*
+
+render-copy-ex
+
 ))
 
 (use-modules (system foreign-library)) ;; probably only need system foreign
@@ -1389,5 +1395,12 @@ typedef enum SDL_RendererFlags
                             #:arg-types (list '* int uint32)))
 
 
+(define *flip-none* #x0)
+(define *flip-horizontal* #x1)
+(define *flip-vertical* #x2)
 
+(define render-copy-ex
+  (foreign-library-function "libSDL2" "SDL_RenderCopyEx"
+                            #:return-type int
+                            #:arg-types (list '* '* '* '* double '* int)))
 

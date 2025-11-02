@@ -88,7 +88,7 @@
 (define *sprites-count-x* 20)
 (define *sprites-count-y* 6)
 
-
+(define *sprite-angle* 0.0)
 (define *sprite-number* 0)
 (define *sprite-number-a* 0)
 (define *sprite-number-b* 0)
@@ -508,25 +508,29 @@
   
   ;; sprites
   ;;(sdl:render-copy *render* *sprites-texture* %null-pointer %null-pointer)
-  (sdl:render-copy *render*
-		   *sprites-texture*
-		   (let ((i *sprite-number*)) ;; where in sprite map image to get sprite
-		     (cond
-		      ((and (>= i 0)(< i (vector-length *sprite-vector*))) (vector-ref *sprite-vector* i))
-		      (#t (set! *sprite-number* 0)
-			  (vector-ref *sprite-vector* 0))))
-		   ;; (make-sdl-rect-pointer 32
-		   ;; 			  37
-		   ;; 			  *sprites-width*
-		   ;; 			  *sprites-height*)
-		   (make-sdl-rect-pointer *mouse-x* ;; where to put sprite
-					  *mouse-y*
-					  (* 6 *sprites-width*) ;; magnify it
-					  (* 6 *sprites-height*)))
+  (sdl:render-copy-ex *render*
+		      *sprites-texture*
+		      (let ((i *sprite-number*)) ;; where in sprite map image to get sprite
+			(cond
+			 ((and (>= i 0)(< i (vector-length *sprite-vector*))) (vector-ref *sprite-vector* i))
+			 (#t (set! *sprite-number* 0)
+			     (vector-ref *sprite-vector* 0))))
+		      (make-sdl-rect-pointer *mouse-x* ;; where to put sprite
+					     *mouse-y*
+					     (* 6 *sprites-width*) ;; magnify it
+					     (* 6 *sprites-height*))
+		      *sprite-angle*
+		      %null-pointer
+		      sdl:*flip-none*)
+
+  
   
   ;; next sprite
   (inc! *frames*)
   (when (> *frames* 15)
+    (inc! *sprite-angle* 5)
+    (when (> *sprite-angle* 360.0)
+      (set! *sprite-angle* 0.0))
     (inc! *sprite-number*)
     (inc! *sprite3-number*)    
     (inc! *sprite4-number*)
