@@ -1,8 +1,16 @@
 
-;; game1.scm
-;;
-;; can we get a sprite on to screen at x y ?
-;; how do we do animation ?
+#|
+game1.scm
+
+can we get a sprite on to screen at x y ?
+how do we do animation ?
+
+can display image on screen
+we can mask out a color of image
+can we make a png from what is on the screen ?
+e.g can we draw a car on screen using paint pots and then save that as the car image
+
+|#
 
 (use-modules (ice-9 optargs)) ;; optional args
 (use-modules (system foreign)) ;; %null-pointer
