@@ -59,8 +59,11 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 
 (define *mouse-x* 0)
 (define *mouse-y* 0)
-(define *screen-width* 1920) ;; full screen my monitor
-(define *screen-height* 1080)
+;;(define *screen-width* 1920) ;; full screen my monitor
+;;(define *screen-height* 1080)
+(define *screen-width* 1024) ;; a window
+(define *screen-height* 768)
+
 (define *resized* #f)
 (define *quit* #f)
 
@@ -525,8 +528,8 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 			     (vector-ref *sprite-vector* 0))))
 		      (make-sdl-rect-pointer *mouse-x* ;; where to put sprite
 					     *mouse-y*
-					     (* 6 *sprites-width*) ;; magnify it
-					     (* 6 *sprites-height*))
+					     (* 1 *sprites-width*) ;; magnify it (* 6 *sprites-width*)
+					     (* 1 *sprites-height*))
 		      *sprite-angle*
 		      %null-pointer
 		      sdl:*flip-none*)
@@ -592,7 +595,8 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 				    (logior
 				     sdl:*window-allow-highdpi*
 				     sdl:*window-always-on-top*
-				     sdl:*window-fullscreen*)))
+				     ;;sdl:*window-fullscreen*
+				     )))
 ;; 			
 ;; ;; convenience middle of my screen 1920 x 1080 default resolution
 ;; (define (create-window title width height)

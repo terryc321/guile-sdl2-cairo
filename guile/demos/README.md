@@ -1,6 +1,11 @@
 
 # Demos
 
+[X] Game1.scm 
+
+
+
+
 alan kay smalltalk - or is that the language he suggests ?
 
 for a character on screen 
