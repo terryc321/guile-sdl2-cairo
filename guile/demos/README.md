@@ -4,8 +4,6 @@
 [X] Game1.scm 
 
 
-
-
 alan kay smalltalk - or is that the language he suggests ?
 
 for a character on screen 
@@ -47,3 +45,16 @@ doing simple pointer indirection is tricky and error prone , complex conversions
 
 dropping to C language
 
+# coop.scm
+
+```
+(use-modules (system repl coop-server))
+;; spawn-coop-repl-server [server-socket]
+;; poll-coop-repl-server coop-server
+```
+
+what want to do ?
+
+change entire running game loop ?
+
+what about the current running game loop ? textures ? rects ? gc ?

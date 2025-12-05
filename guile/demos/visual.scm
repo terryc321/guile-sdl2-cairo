@@ -29,6 +29,10 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 (use-modules ((graphics sdl2 image) #:prefix img:))
 (use-modules ((graphics cairo cairo) #:prefix cairo:))
 
+(use-modules (system repl coop-server))
+
+
+(define *coop-server* #f)
 
 (define (setup) #f)
 
@@ -292,7 +296,11 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 	  (set! *mouse-y* y)))
        (#t #f))))
 
-  (draw-frame))
+  (draw-frame)
+  ;; how we going to do anything now though ?
+  (poll-coop-repl-server *coop-server*)
+  )
+
 
 ;; ===============================
 (define (handle-window-resize-event w h)
@@ -573,6 +581,11 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
   (set! *quit* #f)
   (set! *first-run* #t)  
 
+  ;; open a socket to receive instructions 
+  (set! *coop-server* (spawn-coop-repl-server))
+  (format #t "coop server started ~a~%" *coop-server*)
+
+  
   ;; change to correct directory for demo to work
   (chdir "/home/terry/code/guile-scheme/guile-sdl2-cairo/guile/demos")
 
