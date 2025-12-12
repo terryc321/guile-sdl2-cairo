@@ -52,6 +52,8 @@ call each other
  (format #t "i am insane ~a~%" n)
   (insane (+ n 1)))
 
+
+
 (define (my-routine4)
   (set! *counter* (+ 1 *counter*))
   (format #t "flamboiyant FOUR ~a my-routine~%" *counter*))

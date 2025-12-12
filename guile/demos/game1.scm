@@ -29,6 +29,7 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 (use-modules ((graphics sdl2 image) #:prefix img:))
 (use-modules ((graphics cairo cairo) #:prefix cairo:))
 
+(define *character-size* 1) ;; should this be floating point ?
 
 (define (setup) #f)
 
@@ -527,10 +528,13 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 			 ((and (>= i 0)(< i (vector-length *sprite-vector*))) (vector-ref *sprite-vector* i))
 			 (#t (set! *sprite-number* 0)
 			     (vector-ref *sprite-vector* 0))))
-		      (make-sdl-rect-pointer *mouse-x* ;; where to put sprite
-					     *mouse-y*
-					     (* 1 *sprites-width*) ;; magnify it (* 6 *sprites-width*)
-					     (* 1 *sprites-height*))
+
+		      
+		      
+		      (make-sdl-rect-pointer (- *mouse-x* (floor (/ (* *character-size* *sprites-width*) 2)))  ;; where to put sprite
+					     (- *mouse-y* (floor (/ (* *character-size* *sprites-width*) 2)))
+					     (* *character-size* *sprites-width*) ;; magnify it (* 6 *sprites-width*)
+					     (* *character-size* *sprites-height*))
 		      *sprite-angle*
 		      %null-pointer
 		      sdl:*flip-none*)
@@ -767,8 +771,14 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
   (register-keyboard-fn sdl:*scancode-pagedown* (lambda () (format #t "user pressed sdl-scancode-pagedown key ~%")))
   (register-keyboard-fn sdl:*scancode-right* (lambda () (format #t "user pressed sdl-scancode-right key ~%")))
   (register-keyboard-fn sdl:*scancode-left* (lambda () (format #t "user pressed sdl-scancode-left key ~%")))
-  (register-keyboard-fn sdl:*scancode-down* (lambda () (format #t "user pressed sdl-scancode-down key ~%")))
-  (register-keyboard-fn sdl:*scancode-up* (lambda () (format #t "user pressed sdl-scancode-up key ~%")))
+
+  (register-keyboard-fn sdl:*scancode-down* (lambda ()
+					      (set! *character-size* (max 1 (- *character-size* 1)))
+					      (format #t "user pressed sdl-scancode-down key ~%")))
+  (register-keyboard-fn sdl:*scancode-up* (lambda ()
+					    (set! *character-size* (+ *character-size* 1))
+					    (format #t "user pressed sdl-scancode-up key ~%")))
+
   (register-keyboard-fn sdl:*scancode-numlockclear* (lambda () (format #t "user pressed sdl-scancode-numlockclear key ~%")))
   (register-keyboard-fn sdl:*scancode-kp-divide* (lambda () (format #t "user pressed sdl-scancode-kp-divide key ~%")))
   (register-keyboard-fn sdl:*scancode-kp-multiply* (lambda () (format #t "user pressed sdl-scancode-kp-multiply key ~%")))

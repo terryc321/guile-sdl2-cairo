@@ -1,5 +1,4 @@
-(uiop:define-package :myproject
-  (:use #:cl #:autowrap))
+
 
 (in-package :myproject)
 
