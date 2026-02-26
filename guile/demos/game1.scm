@@ -61,8 +61,8 @@ e.g can we draw a car on screen using paint pots and then save that as the car i
 
 (define *mouse-x* 0)
 (define *mouse-y* 0)
-;;(define *screen-width* 1920) ;; full screen my monitor
-;;(define *screen-height* 1080)
+;; (define *screen-width* 1920) ;; full screen my monitor
+;; (define *screen-height* 1080)
 (define *screen-width* 1024) ;; a window
 (define *screen-height* 768)
 
